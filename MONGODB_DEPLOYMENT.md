@@ -2,14 +2,14 @@
 
 ## STEP 1: Install MongoDB on VM
 
+sudo apt update
+sudo apt install -y mongodb
+
 ```bash
 # SSH to VM
 ssh ipynb@20.197.14.33
 
 # Install MongoDB
-sudo apt update
-sudo apt install -y mongodb
-
 # Start MongoDB
 sudo systemctl start mongodb
 sudo systemctl enable mongodb

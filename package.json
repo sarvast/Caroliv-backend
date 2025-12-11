@@ -1,7 +1,7 @@
 {
     "name": "caroliv-backend",
-    "version": "2.0.0",
-    "description": "Caroliv Backend with MongoDB",
+    "version": "3.0.0",
+    "description": "Caroliv Backend with SQLite",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
@@ -13,7 +13,7 @@
         "express": "^4.21.2",
         "cors": "^2.8.5",
         "dotenv": "^16.4.7",
-        "mongodb": "^6.3.0",
+        "sqlite3": "^5.1.7",
         "bcryptjs": "^2.4.3",
         "jsonwebtoken": "^9.0.2"
     },
