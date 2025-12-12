@@ -11,6 +11,7 @@ import './functions/data/getFoods';
 import './functions/data/getExercises';
 import './functions/admin/foodsAdmin';
 import './functions/admin/exercisesAdmin';
+import './functions/admin/getUsers';
 import './functions/logs/getDailyLogs';
 import './functions/logs/logFood';
 import './functions/logs/logWorkout';

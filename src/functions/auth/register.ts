@@ -11,7 +11,7 @@ export async function register(
 ): Promise<HttpResponseInit> {
     try {
         const body = (await request.json()) as RegisterRequest;
-        const { email, password, name, gender } = body;
+        const { email, password, name, gender, targetWeight } = body;
 
         // Validation
         if (!email || !password || !name || !gender) {
@@ -19,6 +19,15 @@ export async function register(
                 status: 400,
                 jsonBody: { success: false, message: 'Missing required fields' },
             };
+        }
+
+        if (targetWeight !== undefined) {
+            if (typeof targetWeight !== 'number' || targetWeight < 30 || targetWeight > 300) {
+                return {
+                    status: 400,
+                    jsonBody: { success: false, message: 'Target weight must be between 30 and 300 kg' },
+                };
+            }
         }
 
         if (!validateEmail(email)) {
@@ -65,7 +74,9 @@ export async function register(
                 basicInfoDone: false,
                 bioDone: false,
             },
-            profile: {},
+            profile: {
+                targetWeight: targetWeight || 0,
+            },
             subscription: {
                 plan: 'free',
                 premiumExpiresAt: null,

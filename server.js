@@ -33,11 +33,17 @@ function initDatabase() {
       gender TEXT,
       height INTEGER,
       currentWeight INTEGER,
+      targetWeight INTEGER DEFAULT 0,
       goal TEXT DEFAULT 'maintain',
       isGuest INTEGER DEFAULT 0,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
     )`);
+
+        // Migration: Add targetWeight if not exists
+        db.run("ALTER TABLE users ADD COLUMN targetWeight INTEGER DEFAULT 0", (err) => {
+            // Ignore error if column already exists
+        });
 
         // Exercises table
         db.run(`CREATE TABLE IF NOT EXISTS exercises (
@@ -77,10 +83,10 @@ app.use(express.json());
 app.get('/', (req, res) => {
     res.json({
         message: 'Caroliv Backend API',
-        version: '3.0.0',
+        version: '3.1.0',
         database: 'SQLite',
         status: 'running',
-        features: ['Auth', 'Exercises', 'Foods', 'Users']
+        features: ['Auth', 'Exercises', 'Foods', 'Users', 'TargetWeight']
     });
 });
 
@@ -89,7 +95,7 @@ app.get('/', (req, res) => {
 // Register new user
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email, password, name, age, gender, height, currentWeight, goal } = req.body;
+        const { email, password, name, age, gender, height, currentWeight, targetWeight, goal } = req.body;
 
         if (!email || !password || !name) {
             return res.status(400).json({ success: false, error: 'Email, password, and name are required' });
@@ -111,9 +117,9 @@ app.post('/api/auth/register', async (req, res) => {
 
             // Insert user
             db.run(
-                `INSERT INTO users (id, email, password, name, age, gender, height, currentWeight, goal, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [userId, email.toLowerCase(), hashedPassword, name, age, gender, height, currentWeight, goal || 'maintain', now, now],
+                `INSERT INTO users (id, email, password, name, age, gender, height, currentWeight, targetWeight, goal, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [userId, email.toLowerCase(), hashedPassword, name, age, gender, height, currentWeight || 0, targetWeight || 0, goal || 'maintain', now, now],
                 function (err) {
                     if (err) {
                         return res.status(500).json({ success: false, error: err.message });
@@ -126,7 +132,7 @@ app.post('/api/auth/register', async (req, res) => {
                     res.json({
                         success: true,
                         token,
-                        user: { id: userId, email: email.toLowerCase(), name, age, gender, height, currentWeight, goal }
+                        user: { id: userId, email: email.toLowerCase(), name, age, gender, height, currentWeight, targetWeight, goal }
                     });
                 }
             );
@@ -236,7 +242,7 @@ app.put('/api/users/profile', async (req, res) => {
 // ==================== ADMIN - USERS ====================
 
 app.get('/api/admin/users', (req, res) => {
-    db.all('SELECT id, email, password, name, age, gender, height, currentWeight, goal, createdAt, updatedAt FROM users', [], (err, users) => {
+    db.all('SELECT id, email, password, name, age, gender, height, currentWeight, targetWeight, goal, createdAt, updatedAt FROM users', [], (err, users) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
@@ -245,7 +251,7 @@ app.get('/api/admin/users', (req, res) => {
 });
 
 app.get('/api/admin/users/:id', (req, res) => {
-    db.get('SELECT id, email, password, name, age, gender, height, currentWeight, goal, createdAt, updatedAt FROM users WHERE id = ?', [req.params.id], (err, user) => {
+    db.get('SELECT id, email, password, name, age, gender, height, currentWeight, targetWeight, goal, createdAt, updatedAt FROM users WHERE id = ?', [req.params.id], (err, user) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
@@ -415,6 +421,7 @@ app.listen(PORT, () => {
     console.log(`🌐 API: http://localhost:${PORT}/api`);
     console.log(`🔐 Auth: Enabled (JWT)`);
     console.log(`👥 Users: Enabled`);
+    console.log(`Target Weight: Enabled`);
     console.log(`💾 Memory: Zero overhead!`);
 });
 

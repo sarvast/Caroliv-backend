@@ -28,6 +28,17 @@ export async function syncProfile(
         }
 
         const body = (await request.json()) as SyncProfileRequest;
+
+        // Validation
+        if (body.profile?.targetWeight !== undefined) {
+            const tw = body.profile.targetWeight;
+            if (typeof tw !== 'number' || tw < 30 || tw > 300) {
+                return {
+                    status: 400,
+                    jsonBody: { success: false, message: 'Target weight must be between 30 and 300 kg' },
+                };
+            }
+        }
         const usersContainer = getContainer(CONTAINERS.USERS);
 
         // Get current user

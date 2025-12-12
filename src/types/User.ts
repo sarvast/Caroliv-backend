@@ -53,6 +53,7 @@ export interface RegisterRequest {
     password: string;
     name: string;
     gender: 'male' | 'female';
+    targetWeight?: number;
 }
 
 export interface LoginRequest {
