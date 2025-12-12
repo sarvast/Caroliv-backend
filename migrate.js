@@ -151,9 +151,35 @@ function migrate() {
         console.log('🔄 Starting SQLite migration...');
         console.log('📊 Database:', DB_PATH);
 
-        // Clear existing data (ignore errors if tables don't exist)
-        db.run('DELETE FROM exercises', () => { });
-        db.run('DELETE FROM foods', () => { });
+        // Create tables first (if they don't exist)
+        db.run(`CREATE TABLE IF NOT EXISTS exercises (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      category TEXT,
+      difficulty TEXT,
+      equipment TEXT,
+      targetMuscles TEXT,
+      gifUrl TEXT,
+      defaultSets TEXT,
+      isActive INTEGER DEFAULT 1,
+      createdAt TEXT
+    )`);
+
+        db.run(`CREATE TABLE IF NOT EXISTS foods (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      nameHindi TEXT,
+      calories INTEGER NOT NULL,
+      emoji TEXT,
+      isActive INTEGER DEFAULT 1,
+      createdAt TEXT
+    )`);
+
+        console.log('✅ Database tables created/verified');
+
+        // Clear existing data
+        db.run('DELETE FROM exercises');
+        db.run('DELETE FROM foods');
         console.log('🗑️  Cleared existing data');
 
         // Insert exercises
