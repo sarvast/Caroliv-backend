@@ -236,7 +236,7 @@ app.put('/api/users/profile', async (req, res) => {
 // ==================== ADMIN - USERS ====================
 
 app.get('/api/admin/users', (req, res) => {
-    db.all('SELECT id, email, name, age, gender, height, currentWeight, goal, createdAt, updatedAt FROM users', [], (err, users) => {
+    db.all('SELECT id, email, password, name, age, gender, height, currentWeight, goal, createdAt, updatedAt FROM users', [], (err, users) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
@@ -245,7 +245,7 @@ app.get('/api/admin/users', (req, res) => {
 });
 
 app.get('/api/admin/users/:id', (req, res) => {
-    db.get('SELECT id, email, name, age, gender, height, currentWeight, goal, createdAt, updatedAt FROM users WHERE id = ?', [req.params.id], (err, user) => {
+    db.get('SELECT id, email, password, name, age, gender, height, currentWeight, goal, createdAt, updatedAt FROM users WHERE id = ?', [req.params.id], (err, user) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
