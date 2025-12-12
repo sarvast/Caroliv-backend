@@ -151,9 +151,9 @@ function migrate() {
         console.log('🔄 Starting SQLite migration...');
         console.log('📊 Database:', DB_PATH);
 
-        // Clear existing data
-        db.run('DELETE FROM exercises');
-        db.run('DELETE FROM foods');
+        // Clear existing data (ignore errors if tables don't exist)
+        db.run('DELETE FROM exercises', () => { });
+        db.run('DELETE FROM foods', () => { });
         console.log('🗑️  Cleared existing data');
 
         // Insert exercises
@@ -194,25 +194,27 @@ function migrate() {
                 new Date().toISOString()
             );
         });
-        foodStmt.finalize();
-        console.log(`✅ Inserted ${foods.length} foods`);
+        foodStmt.finalize(() => {
+            console.log(`✅ Inserted ${foods.length} foods`);
 
-        console.log('🎉 Migration complete!');
-        console.log('');
-        console.log('Summary:');
-        console.log(`  - Exercises: ${exercises.length}`);
-        console.log(`  - Foods: ${foods.length}`);
-        console.log(`  - Total: ${exercises.length + foods.length} items`);
-        console.log(`  - Database: ${DB_PATH}`);
-    });
+            console.log('🎉 Migration complete!');
+            console.log('');
+            console.log('Summary:');
+            console.log(`  - Exercises: ${exercises.length}`);
+            console.log(`  - Foods: ${foods.length}`);
+            console.log(`  - Total: ${exercises.length + foods.length} items`);
+            console.log(`  - Database: ${DB_PATH}`);
 
-    db.close((err) => {
-        if (err) {
-            console.error('❌ Error closing database:', err);
-            process.exit(1);
-        }
-        console.log('✅ Database connection closed');
-        process.exit(0);
+            // Close database AFTER all inserts complete
+            db.close((err) => {
+                if (err) {
+                    console.error('❌ Error closing database:', err);
+                    process.exit(1);
+                }
+                console.log('✅ Database connection closed');
+                process.exit(0);
+            });
+        });
     });
 }
 
