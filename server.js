@@ -45,6 +45,12 @@ function initDatabase() {
             // Ignore error if column already exists
         });
 
+        // Migration: Add measurement cols to users
+        const measurementCols = ['chest', 'waist', 'arms', 'hips'];
+        measurementCols.forEach(col => {
+            db.run(`ALTER TABLE users ADD COLUMN ${col} REAL`, () => { });
+        });
+
         // Exercises table
         db.run(`CREATE TABLE IF NOT EXISTS exercises (
       id TEXT PRIMARY KEY,
@@ -67,6 +73,18 @@ function initDatabase() {
       calories INTEGER NOT NULL,
       emoji TEXT,
       isActive INTEGER DEFAULT 1,
+      createdAt TEXT
+    )`);
+
+        // Body Measurements table
+        db.run(`CREATE TABLE IF NOT EXISTS body_measurements (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      date TEXT NOT NULL,
+      chest REAL,
+      waist REAL,
+      arms REAL,
+      hips REAL,
       createdAt TEXT
     )`);
 
@@ -239,10 +257,88 @@ app.put('/api/users/profile', async (req, res) => {
     }
 });
 
+// ==================== BODY MEASUREMENTS ====================
+
+app.get('/api/users/measurements', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'No token provided' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        db.all('SELECT * FROM body_measurements WHERE userId = ? ORDER BY date DESC', [decoded.userId], (err, rows) => {
+            if (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+            res.json({ success: true, data: rows });
+        });
+    } catch (error) {
+        res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+});
+
+app.post('/api/users/measurements', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'No token provided' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { date, chest, waist, arms, hips } = req.body;
+        const id = Date.now().toString();
+        const createdAt = new Date().toISOString();
+
+        db.run(
+            `INSERT INTO body_measurements (id, userId, date, chest, waist, arms, hips, createdAt)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [id, decoded.userId, date, chest, waist, arms, hips, createdAt],
+            function (err) {
+                if (err) {
+                    return res.status(500).json({ success: false, error: err.message });
+                }
+
+                // ALSO UPDATE USER TABLE (Latest Measurements)
+                db.run(
+                    `UPDATE users SET chest = COALESCE(?, chest), waist = COALESCE(?, waist), arms = COALESCE(?, arms), hips = COALESCE(?, hips) WHERE id = ?`,
+                    [chest, waist, arms, hips, decoded.userId]
+                );
+
+                res.json({ success: true, data: { id, userId: decoded.userId, date, chest, waist, arms, hips, createdAt } });
+            }
+        );
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.delete('/api/users/measurements/:id', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'No token provided' });
+        }
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        db.run('DELETE FROM body_measurements WHERE id = ? AND userId = ?', [req.params.id, decoded.userId], function (err) {
+            if (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+            if (this.changes === 0) {
+                return res.status(404).json({ success: false, error: 'Measurement not found or unauthorized' });
+            }
+            res.json({ success: true, message: 'Measurement deleted' });
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // ==================== ADMIN - USERS ====================
 
 app.get('/api/admin/users', (req, res) => {
-    db.all('SELECT id, email, password, name, age, gender, height, currentWeight, targetWeight, goal, createdAt, updatedAt FROM users', [], (err, users) => {
+    db.all('SELECT id, email, password, name, age, gender, height, currentWeight, targetWeight, goal, chest, waist, arms, hips, createdAt, updatedAt FROM users', [], (err, users) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
@@ -251,7 +347,7 @@ app.get('/api/admin/users', (req, res) => {
 });
 
 app.get('/api/admin/users/:id', (req, res) => {
-    db.get('SELECT id, email, password, name, age, gender, height, currentWeight, targetWeight, goal, createdAt, updatedAt FROM users WHERE id = ?', [req.params.id], (err, user) => {
+    db.get('SELECT id, email, password, name, age, gender, height, currentWeight, targetWeight, goal, chest, waist, arms, hips, createdAt, updatedAt FROM users WHERE id = ?', [req.params.id], (err, user) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
@@ -272,6 +368,15 @@ app.delete('/api/admin/users/:id', (req, res) => {
         }
         console.log('✅ User deleted:', req.params.id);
         res.json({ success: true, message: 'User deleted' });
+    });
+});
+
+app.get('/api/admin/users/:id/measurements', (req, res) => {
+    db.all('SELECT * FROM body_measurements WHERE userId = ? ORDER BY date DESC', [req.params.id], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        res.json({ success: true, data: rows });
     });
 });
 
