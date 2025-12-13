@@ -119,6 +119,8 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Email, password, and name are required' });
         }
 
+        console.log('🔍 Backend Register - Received gender:', gender);
+
         // Check if user exists
         db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()], async (err, row) => {
             if (err) {

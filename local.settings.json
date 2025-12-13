@@ -1,0 +1,13 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "",
+        "FUNCTIONS_WORKER_RUNTIME": "node",
+        "COSMOS_CONNECTION_STRING": "AccountEndpoint=https://YOUR_ACCOUNT.documents.azure.com:443/;AccountKey=YOUR_KEY;",
+        "COSMOS_DATABASE_NAME": "caroliv-db",
+        "JWT_SECRET": "your-super-secret-jwt-key-change-in-production",
+        "ADMIN_API_KEY": "your-admin-api-key-change-in-production",
+        "RAZORPAY_KEY_ID": "rzp_test_YOUR_KEY_ID",
+        "RAZORPAY_KEY_SECRET": "YOUR_KEY_SECRET"
+    }
+}
