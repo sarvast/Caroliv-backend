@@ -1,9 +1,30 @@
+# Dependencies
 node_modules/
-dist/
-.env
-local.settings.json
-*.zip
-.vscode/
-.DS_Store
+
+# Database
+*.db
+*.db-journal
+
+# Logs
 *.log
-caroliv.db
+npm-debug.log*
+pm2*.log
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (unnecessary)
+*.md
+!README.md
+*.bat
+FETCH_HEAD
+
+# Build
+dist/
+build/
+.cache/
