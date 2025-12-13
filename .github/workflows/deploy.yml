@@ -1,0 +1,25 @@
+name: Auto Deploy Caroliv Backend
+
+on:
+  push:
+    branches:
+      - main   # agar branch master hai to master likho
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Azure VM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            cd ~/Caroliv-backend
+            git pull origin main
+            npm install
+            node migrate.js
+            pm2 restart caroliv-backend || pm2 start server.js --name caroliv-backend
+            pm2 save

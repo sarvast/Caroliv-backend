@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        
+
         if (!email || !password) {
             return res.status(400).json({ success: false, message: 'Email and password required' });
         }
@@ -73,14 +73,14 @@ app.post('/api/login', async (req, res) => {
 // Register
 app.post('/api/register', async (req, res) => {
     try {
-        const { email, password, name, age, gender, weight, height, goal, activityLevel } = req.body;
+        const { email, password, name, age, gender, weight, height, targetWeight, goal, activityLevel } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({ success: false, message: 'Email and password required' });
         }
 
         const container = getContainer(CONTAINERS.USERS);
-        
+
         // Check if user exists
         const { resources: existing } = await container.items
             .query({
@@ -105,6 +105,7 @@ app.post('/api/register', async (req, res) => {
             gender: gender || '',
             weight: weight || 0,
             height: height || 0,
+            targetWeight: targetWeight || 0,
             goal: goal || 'maintain',
             activityLevel: activityLevel || 'moderate',
             createdAt: now,
@@ -126,6 +127,7 @@ app.post('/api/register', async (req, res) => {
                 gender: user.gender,
                 weight: user.weight,
                 height: user.height,
+                targetWeight: user.targetWeight,
                 goal: user.goal,
                 activityLevel: user.activityLevel,
             }
@@ -147,10 +149,10 @@ app.post('/api/syncprofile', async (req, res) => {
         const token = authHeader.substring(7);
         const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-        const { name, age, gender, weight, height, goal, activityLevel } = req.body;
+        const { name, age, gender, weight, height, targetWeight, goal, activityLevel } = req.body;
 
         const container = getContainer(CONTAINERS.USERS);
-        
+
         const { resources } = await container.items
             .query({
                 query: 'SELECT * FROM c WHERE c.email = @email',
@@ -170,6 +172,7 @@ app.post('/api/syncprofile', async (req, res) => {
             gender: gender ?? user.gender,
             weight: weight ?? user.weight,
             height: height ?? user.height,
+            targetWeight: targetWeight ?? user.targetWeight,
             goal: goal ?? user.goal,
             activityLevel: activityLevel ?? user.activityLevel,
             updatedAt: new Date().toISOString(),
