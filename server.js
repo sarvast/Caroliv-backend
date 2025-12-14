@@ -106,7 +106,7 @@ function initDatabase() {
                 db.run(
                     `INSERT INTO app_config (id, requiredVersion, forceUpdate, updateMessage, updateUrl, createdAt, updatedAt)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    ['default', '1.0.0', 0, 'A new version of Caloriv is available! Update now for the best experience.', 'https://caloriv-web.vercel.app/', now, now],
+                    ['default', '69.0.0', 0, 'A new version of Caloriv is available! Update now for the best experience.', 'https://caloriv-web.vercel.app/', now, now],
                     (err) => {
                         if (!err) console.log('✅ Default app config initialized');
                     }
@@ -147,7 +147,7 @@ app.get('/api/config/app-version', (req, res) => {
             return res.json({
                 success: true,
                 data: {
-                    requiredVersion: '1.0.0',
+                    requiredVersion: '69.0.0',
                     forceUpdate: false,
                     updateMessage: 'A new version of Caloriv is available!',
                     updateUrl: 'https://caloriv-web.vercel.app/'
