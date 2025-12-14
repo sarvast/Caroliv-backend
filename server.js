@@ -88,6 +88,32 @@ function initDatabase() {
       createdAt TEXT
     )`);
 
+        // App Configuration table (for version control)
+        db.run(`CREATE TABLE IF NOT EXISTS app_config (
+      id TEXT PRIMARY KEY,
+      requiredVersion TEXT NOT NULL,
+      forceUpdate INTEGER DEFAULT 0,
+      updateMessage TEXT,
+      updateUrl TEXT DEFAULT 'https://caloriv-web.vercel.app/',
+      createdAt TEXT,
+      updatedAt TEXT
+    )`);
+
+        // Initialize default app config
+        db.get('SELECT id FROM app_config WHERE id = ?', ['default'], (err, row) => {
+            if (!row) {
+                const now = new Date().toISOString();
+                db.run(
+                    `INSERT INTO app_config (id, requiredVersion, forceUpdate, updateMessage, updateUrl, createdAt, updatedAt)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    ['default', '1.0.0', 0, 'A new version of Caloriv is available! Update now for the best experience.', 'https://caloriv-web.vercel.app/', now, now],
+                    (err) => {
+                        if (!err) console.log('✅ Default app config initialized');
+                    }
+                );
+            }
+        });
+
         console.log('✅ Database tables initialized');
     });
 }
@@ -106,6 +132,93 @@ app.get('/', (req, res) => {
         status: 'running',
         features: ['Auth', 'Exercises', 'Foods', 'Users', 'TargetWeight']
     });
+});
+
+// ==================== APP VERSION CONFIG ====================
+
+// Get app version config (PUBLIC - used by mobile app on startup)
+app.get('/api/config/app-version', (req, res) => {
+    db.get('SELECT requiredVersion, forceUpdate, updateMessage, updateUrl FROM app_config WHERE id = ?', ['default'], (err, config) => {
+        if (err) {
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        if (!config) {
+            // Return default if not found
+            return res.json({
+                success: true,
+                data: {
+                    requiredVersion: '1.0.0',
+                    forceUpdate: false,
+                    updateMessage: 'A new version of Caloriv is available!',
+                    updateUrl: 'https://caloriv-web.vercel.app/'
+                }
+            });
+        }
+        res.json({
+            success: true,
+            data: {
+                requiredVersion: config.requiredVersion,
+                forceUpdate: config.forceUpdate === 1,
+                updateMessage: config.updateMessage,
+                updateUrl: config.updateUrl
+            }
+        });
+    });
+});
+
+// Get app config (ADMIN)
+app.get('/api/admin/config', (req, res) => {
+    db.get('SELECT * FROM app_config WHERE id = ?', ['default'], (err, config) => {
+        if (err) {
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        if (!config) {
+            return res.status(404).json({ success: false, error: 'Config not found' });
+        }
+        res.json({
+            success: true,
+            data: {
+                ...config,
+                forceUpdate: config.forceUpdate === 1
+            }
+        });
+    });
+});
+
+// Update app config (ADMIN)
+app.put('/api/admin/config', (req, res) => {
+    const { requiredVersion, forceUpdate, updateMessage, updateUrl } = req.body;
+
+    if (!requiredVersion) {
+        return res.status(400).json({ success: false, error: 'requiredVersion is required' });
+    }
+
+    // Validate version format (X.Y.Z)
+    const versionRegex = /^\d+\.\d+\.\d+$/;
+    if (!versionRegex.test(requiredVersion)) {
+        return res.status(400).json({ success: false, error: 'Invalid version format. Use X.Y.Z (e.g., 1.0.0)' });
+    }
+
+    const now = new Date().toISOString();
+    const forceUpdateInt = forceUpdate ? 1 : 0;
+
+    db.run(
+        `UPDATE app_config SET requiredVersion = ?, forceUpdate = ?, updateMessage = ?, updateUrl = ?, updatedAt = ? WHERE id = ?`,
+        [requiredVersion, forceUpdateInt, updateMessage, updateUrl || 'https://caloriv-web.vercel.app/', now, 'default'],
+        function (err) {
+            if (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+            if (this.changes === 0) {
+                return res.status(404).json({ success: false, error: 'Config not found' });
+            }
+            console.log(`✅ App config updated: v${requiredVersion}, forceUpdate: ${forceUpdate}`);
+            res.json({
+                success: true,
+                data: { requiredVersion, forceUpdate, updateMessage, updateUrl, updatedAt: now }
+            });
+        }
+    );
 });
 
 // ==================== AUTHENTICATION ====================
