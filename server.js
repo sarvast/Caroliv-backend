@@ -4,11 +4,33 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
+
+// Load local.settings.json if present (fallback for .env)
+const localSettingsPath = path.join(__dirname, 'local.settings.json');
+if (fs.existsSync(localSettingsPath)) {
+    try {
+        const settings = JSON.parse(fs.readFileSync(localSettingsPath, 'utf8'));
+        if (settings.Values) {
+            Object.assign(process.env, settings.Values);
+        }
+    } catch (e) {
+        console.error('Error loading local.settings.json', e);
+    }
+}
+
+const Razorpay = require('razorpay');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'caroliv-secret-key-2025';
+
+// Razorpay Instance
+const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 // SQLite Database
 const DB_PATH = path.join(__dirname, 'caroliv.db');
@@ -312,6 +334,54 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// Reset Password (Self-Serve)
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { email, currentWeight, age, newPassword } = req.body;
+
+        if (!email || !currentWeight || !age || !newPassword) {
+            return res.status(400).json({ success: false, error: 'All fields are required' });
+        }
+
+        db.get('SELECT * FROM users WHERE email = ?', [email.toLowerCase()], async (err, user) => {
+            if (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+            if (!user) {
+                return res.status(404).json({ success: false, error: 'User not found' });
+            }
+
+            // Verification Logic
+            // Note: Database stores numbers as numbers, ensuring type match
+            const weightMatch = Math.abs(user.currentWeight - parseFloat(currentWeight)) < 0.1; // Allow small float diff
+            const ageMatch = user.age === parseInt(age);
+
+            if (!weightMatch || !ageMatch) {
+                console.log(`❌ Password reset failed for ${email}. Weight: ${user.currentWeight} vs ${currentWeight}, Age: ${user.age} vs ${age}`);
+                return res.status(400).json({ success: false, error: 'Verification failed. Details do not match.' });
+            }
+
+            // Hash new password
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            const now = new Date().toISOString();
+
+            db.run(
+                'UPDATE users SET password = ?, updatedAt = ? WHERE id = ?',
+                [hashedPassword, now, user.id],
+                function (err) {
+                    if (err) {
+                        return res.status(500).json({ success: false, error: err.message });
+                    }
+                    console.log(`✅ User reset password: ${email}`);
+                    res.json({ success: true, message: 'Password reset successfully' });
+                }
+            );
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Get user profile
 app.get('/api/users/profile', async (req, res) => {
     try {
@@ -486,6 +556,37 @@ app.delete('/api/admin/users/:id', (req, res) => {
     });
 });
 
+// Admin Reset Password
+app.put('/api/admin/users/:id/password', async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ success: false, error: 'New password is required' });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const now = new Date().toISOString();
+
+        db.run(
+            'UPDATE users SET password = ?, updatedAt = ? WHERE id = ?',
+            [hashedPassword, now, req.params.id],
+            function (err) {
+                if (err) {
+                    return res.status(500).json({ success: false, error: err.message });
+                }
+                if (this.changes === 0) {
+                    return res.status(404).json({ success: false, error: 'User not found' });
+                }
+                console.log(`✅ Password reset for user: ${req.params.id}`);
+                res.json({ success: true, message: 'Password updated successfully' });
+            }
+        );
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 app.get('/api/admin/users/:id/measurements', (req, res) => {
     db.all('SELECT * FROM body_measurements WHERE userId = ? ORDER BY date DESC', [req.params.id], (err, rows) => {
         if (err) {
@@ -645,6 +746,30 @@ app.delete('/api/admin/foods/:id', (req, res) => {
         console.log('✅ Food deleted:', req.params.id);
         res.json({ success: true, message: 'Food deleted' });
     });
+});
+
+// ==================== PAYMENT ====================
+
+app.post('/api/payment/create-order', async (req, res) => {
+    try {
+        const { amount, currency = 'INR' } = req.body; // Amount in smallest currency unit (paise)
+
+        // Default to ₹100 if not provided, just for safety or fixed donation
+        const orderAmount = amount || 10000; // 100 INR
+
+        const options = {
+            amount: orderAmount,
+            currency,
+            receipt: `receipt_${Date.now()}`,
+        };
+
+        const order = await razorpay.orders.create(options);
+        console.log('✅ Payment Order Created:', order.id);
+        res.json(order);
+    } catch (error) {
+        console.error('❌ Razorpay Order Error:', error);
+        res.status(500).json({ error: 'Failed to create payment order' });
+    }
 });
 
 // Start server
