@@ -156,6 +156,19 @@ function initDatabase() {
           createdAt TEXT
         )`);
     });
+    // Exercise Submissions Table (New)
+    db.serialize(() => {
+        db.run(`CREATE TABLE IF NOT EXISTS exercise_submissions (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          category TEXT,
+          difficulty TEXT,
+          equipment TEXT,
+          targetMuscles TEXT,
+          status TEXT DEFAULT 'pending',
+          createdAt TEXT
+        )`);
+    });
 }
 
 initDatabase();
@@ -163,6 +176,83 @@ initDatabase();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// ... (existing helper endpoints) ...
+
+// ==================== EXERCISE SUBMISSIONS ====================
+
+app.post('/api/exercises/submit', (req, res) => {
+    const { name, category, difficulty, equipment, targetMuscles } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ success: false, error: 'Name is required' });
+    }
+
+    const id = Date.now().toString();
+    const createdAt = new Date().toISOString();
+    const musclesJson = JSON.stringify(targetMuscles || []);
+
+    db.run(
+        `INSERT INTO exercise_submissions (id, name, category, difficulty, equipment, targetMuscles, status, createdAt)
+         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
+        [id, name, category, difficulty, equipment, musclesJson, createdAt],
+        function (err) {
+            if (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+            console.log('✅ Exercise submitted for review:', name);
+            res.json({ success: true, message: 'Exercise submitted for review' });
+        }
+    );
+});
+
+app.get('/api/admin/exercise-submissions', (req, res) => {
+    db.all('SELECT * FROM exercise_submissions ORDER BY createdAt DESC', [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        // Parse JSON
+        const parsed = rows.map(r => ({
+            ...r,
+            targetMuscles: r.targetMuscles ? JSON.parse(r.targetMuscles) : []
+        }));
+        res.json({ success: true, data: parsed });
+    });
+});
+
+app.post('/api/admin/exercise-submissions/:id/approve', (req, res) => {
+    db.get('SELECT * FROM exercise_submissions WHERE id = ?', [req.params.id], (err, submission) => {
+        if (err || !submission) {
+            return res.status(404).json({ success: false, error: 'Submission not found' });
+        }
+
+        const exId = Date.now().toString();
+        const createdAt = new Date().toISOString();
+
+        // 1. Add to main exercises table
+        db.run(
+            `INSERT INTO exercises (id, name, category, difficulty, equipment, targetMuscles, isActive, createdAt)
+             VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+            [exId, submission.name, submission.category, submission.difficulty, submission.equipment, submission.targetMuscles, createdAt],
+            (err) => {
+                if (err) return res.status(500).json({ success: false, error: err.message });
+
+                // 2. Delete from submissions
+                db.run('DELETE FROM exercise_submissions WHERE id = ?', [req.params.id], () => {
+                    console.log('✅ Exercise approved:', submission.name);
+                    res.json({ success: true, message: 'Exercise approved' });
+                });
+            }
+        );
+    });
+});
+
+app.delete('/api/admin/exercise-submissions/:id', (req, res) => {
+    db.run('DELETE FROM exercise_submissions WHERE id = ?', [req.params.id], function (err) {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        res.json({ success: true, message: 'Submission rejected' });
+    });
+});
 
 // Health check
 app.get('/', (req, res) => {
