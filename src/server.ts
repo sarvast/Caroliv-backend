@@ -1,8 +1,9 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { getContainer, CONTAINERS } from './lib/cosmosClient';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -10,17 +11,84 @@ const JWT_SECRET = process.env.JWT_SECRET || '##hellosarvasva69';
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Increase limit for images
 
 // Health check
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
     res.json({ status: 'Caroliv API is running!', version: '1.0.0' });
+});
+
+// ============ AI ENDPOINT ============
+app.post('/api/ai/analyze-food', async (req: Request, res: Response) => {
+    try {
+        const { image, text } = req.body;
+        const apiKey = process.env.GEMINI_API_KEY;
+
+        if (!apiKey) {
+            return res.status(500).json({ success: false, message: 'Gemini API Key missing' });
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const prompt = `Analyze this food and identify the food item name and estimate calories and macros (protein, carbs, fat) for a standard serving. 
+        Detailed requirements:
+        1. Identify the food name clearly.
+        2. Estimate calories (kcal).
+        3. Estimate protein (g), carbs (g), fat (g).
+        4. Suggest a serving size.
+        
+        Return STRICTLY valid JSON only, no markdown, no other text.
+        Format:
+        {
+            "name": "Food Name",
+            "calories": 0,
+            "protein": 0,
+            "carbs": 0,
+            "fat": 0,
+            "servingSize": "1 plate"
+        }`;
+
+        let result;
+        if (image) {
+            // Assume image is base64 string without data:image/jpeg;base64 prefix if possible, or handle it
+            // usually client sends clean base64
+            const cleanImage = image.replace(/^data:image\/\w+;base64,/, "");
+
+            const imagePart = {
+                inlineData: {
+                    data: cleanImage,
+                    mimeType: "image/jpeg"
+                }
+            };
+            result = await model.generateContent([prompt, imagePart]);
+        } else if (text) {
+            result = await model.generateContent([prompt, `Food description: ${text}`]);
+        } else {
+            return res.status(400).json({ success: false, message: 'Image or text required' });
+        }
+
+        const response = await result.response;
+        const textResponse = response.text();
+
+        console.log('Gemini Response:', textResponse);
+
+        // Clean markdown if present
+        const cleaned = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+        const json = JSON.parse(cleaned);
+
+        res.json({ success: true, data: json });
+
+    } catch (error: any) {
+        console.error("AI Analysis Error:", error);
+        res.status(500).json({ success: false, message: "AI Analysis failed", error: error.message });
+    }
 });
 
 // ============ AUTH ENDPOINTS ============
 
 // Login
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
 
@@ -71,7 +139,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Register
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', async (req: Request, res: Response) => {
     try {
         const { email, password, name, age, gender, weight, height, targetWeight, goal, activityLevel } = req.body;
 
@@ -139,7 +207,7 @@ app.post('/api/register', async (req, res) => {
 });
 
 // Sync Profile
-app.post('/api/syncprofile', async (req, res) => {
+app.post('/api/syncprofile', async (req: Request, res: Response) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
@@ -190,7 +258,7 @@ app.post('/api/syncprofile', async (req, res) => {
 // ============ DATA ENDPOINTS ============
 
 // Get Foods
-app.get('/api/foods', async (req, res) => {
+app.get('/api/foods', async (req: Request, res: Response) => {
     try {
         const category = req.query.category as string;
         const search = req.query.search as string;
@@ -222,7 +290,7 @@ app.get('/api/foods', async (req, res) => {
 });
 
 // Get Exercises
-app.get('/api/exercises', async (req, res) => {
+app.get('/api/exercises', async (req: Request, res: Response) => {
     try {
         const category = req.query.category as string;
         const difficulty = req.query.difficulty as string;
@@ -256,7 +324,7 @@ app.get('/api/exercises', async (req, res) => {
 // ============ ADMIN ENDPOINTS ============
 
 // Get all foods (admin)
-app.get('/api/admin/foods', async (req, res) => {
+app.get('/api/admin/foods', async (req: Request, res: Response) => {
     try {
         const container = getContainer(CONTAINERS.FOODS);
         const { resources } = await container.items.readAll().fetchAll();
@@ -268,7 +336,7 @@ app.get('/api/admin/foods', async (req, res) => {
 });
 
 // Create food
-app.post('/api/admin/foods', async (req, res) => {
+app.post('/api/admin/foods', async (req: Request, res: Response) => {
     try {
         const container = getContainer(CONTAINERS.FOODS);
         const now = new Date().toISOString();
@@ -290,7 +358,7 @@ app.post('/api/admin/foods', async (req, res) => {
 });
 
 // Update food
-app.put('/api/admin/foods/:id', async (req, res) => {
+app.put('/api/admin/foods/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const container = getContainer(CONTAINERS.FOODS);
@@ -324,7 +392,7 @@ app.put('/api/admin/foods/:id', async (req, res) => {
 });
 
 // Delete food
-app.delete('/api/admin/foods/:id', async (req, res) => {
+app.delete('/api/admin/foods/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const container = getContainer(CONTAINERS.FOODS);
@@ -350,7 +418,7 @@ app.delete('/api/admin/foods/:id', async (req, res) => {
 });
 
 // Similar endpoints for exercises...
-app.get('/api/admin/exercises', async (req, res) => {
+app.get('/api/admin/exercises', async (req: Request, res: Response) => {
     try {
         const container = getContainer(CONTAINERS.EXERCISES);
         const { resources } = await container.items.readAll().fetchAll();
@@ -360,7 +428,7 @@ app.get('/api/admin/exercises', async (req, res) => {
     }
 });
 
-app.post('/api/admin/exercises', async (req, res) => {
+app.post('/api/admin/exercises', async (req: Request, res: Response) => {
     try {
         const container = getContainer(CONTAINERS.EXERCISES);
         const exercise = {
@@ -377,7 +445,7 @@ app.post('/api/admin/exercises', async (req, res) => {
     }
 });
 
-app.put('/api/admin/exercises/:id', async (req, res) => {
+app.put('/api/admin/exercises/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const container = getContainer(CONTAINERS.EXERCISES);
@@ -399,7 +467,7 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/admin/exercises/:id', async (req, res) => {
+app.delete('/api/admin/exercises/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const container = getContainer(CONTAINERS.EXERCISES);
@@ -417,6 +485,38 @@ app.delete('/api/admin/exercises/:id', async (req, res) => {
         res.json({ success: true, message: 'Exercise deleted successfully' });
     } catch (error: any) {
         res.status(500).json({ success: false, message: 'Failed to delete exercise' });
+    }
+});
+
+// Razorpay Setup
+const Razorpay = require('razorpay');
+// Note: In Azure Functions or local settings, these come from process.env via Values
+const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+// ... (existing AI endpoint)
+
+app.post('/api/payment/create-order', async (req: any, res: any) => {
+    try {
+        const { amount, currency = 'INR' } = req.body; // Amount in smallest currency unit (paise)
+
+        // Default to ₹100 if not provided, just for safety or fixed donation
+        const orderAmount = amount || 10000; // 100 INR
+
+        const options = {
+            amount: orderAmount,
+            currency,
+            receipt: `receipt_${Date.now()}`,
+        };
+
+        const order = await razorpay.orders.create(options);
+        console.log('✅ Payment Order Created:', order.id);
+        res.json(order);
+    } catch (error) {
+        console.error('❌ Razorpay Order Error:', error);
+        res.status(500).json({ error: 'Failed to create payment order' });
     }
 });
 
