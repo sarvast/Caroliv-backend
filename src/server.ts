@@ -149,7 +149,9 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
                 age: user.age,
                 gender: user.gender,
                 weight: user.weight,
+                currentWeight: user.weight, // Alias for app compatibility
                 height: user.height,
+                targetWeight: user.targetWeight,
                 goal: user.goal,
                 activityLevel: user.activityLevel,
             }
