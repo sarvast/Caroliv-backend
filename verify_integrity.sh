@@ -1,11 +1,11 @@
 #!/bin/bash
 echo "🔍 Checking VM Deployment Integrity..."
 
-# Check server.ts for api/config/app-version
-if grep -q "api/config/app-version" src/server.ts; then
-    echo "✅ server.ts: App Version Endpoint FOUND"
+# Check server.ts for api/config/app-version AND currentWeight fix
+if grep -q "api/config/app-version" src/server.ts && grep -q "currentWeight" src/server.ts; then
+    echo "✅ server.ts: App Version & Profile Fix FOUND"
 else
-    echo "❌ server.ts: App Version Endpoint MISSING (Old Code!)"
+    echo "❌ server.ts: Code outdated (Missing Profile Fix)"
 fi
 
 # Check migrate.js for user_measurements

@@ -241,6 +241,21 @@ function migrate() {
             FOREIGN KEY(user_id) REFERENCES users(id)
         )`);
 
+        // Create App Config Table
+        db.run(`CREATE TABLE IF NOT EXISTS app_config (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updatedAt TEXT
+        )`);
+
+        // Insert default app config if not exists
+        const configStmt = db.prepare(`INSERT OR IGNORE INTO app_config (key, value, updatedAt) VALUES (?, ?, ?)`);
+        configStmt.run('requiredVersion', '1.0.0', new Date().toISOString());
+        configStmt.run('forceUpdate', 'false', new Date().toISOString());
+        configStmt.run('updateMessage', 'A new version of Caloriv is available! Update now for the best experience.', new Date().toISOString());
+        configStmt.run('updateUrl', 'https://caloriv-web.vercel.app/', new Date().toISOString());
+        configStmt.finalize();
+
         // Ensure isActive defaults to 1 for migration items is handled in insert
         // Note: Submitted exercises will be inserted with isActive=0 via the API
 

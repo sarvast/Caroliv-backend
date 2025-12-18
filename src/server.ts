@@ -298,7 +298,173 @@ app.put('/api/users/profile', async (req: Request, res: Response) => {
     }
 });
 
-// ============ DATA ENDPOINTS ============
+// ============ ADMIN ENDPOINTS (Full Implementation) ============
+
+// Admin Middleware
+const checkAdminAuth = (req: Request, res: Response, next: NextFunction) => {
+    const adminKey = req.headers['x-admin-key'];
+    // In production, use a secure env var. For this VM setup, we match the frontend default or a fixed key.
+    const validKey = process.env.ADMIN_KEY || 'your-admin-api-key';
+
+    // Also allow the "token" style if legacy
+    if (adminKey === validKey || adminKey === 'admin_token_caroliv') {
+        next();
+    } else {
+        res.status(401).json({ success: false, message: 'Unauthorized Admin Access' });
+    }
+};
+
+// 1. App Updates Config
+app.get('/api/admin/config', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        const rows = await db.query('SELECT key, value FROM app_config');
+        const config: any = {};
+        rows.forEach((row: any) => {
+            // Convert boolean strings
+            if (row.value === 'true') config[row.key] = true;
+            else if (row.value === 'false') config[row.key] = false;
+            else config[row.key] = row.value;
+        });
+
+        // Ensure defaults if empty
+        const defaults: any = {
+            requiredVersion: '1.0.0',
+            forceUpdate: false,
+            updateMessage: 'Please update app',
+            updateUrl: 'https://example.com'
+        };
+
+        res.json({ success: true, data: { ...defaults, ...config } });
+    } catch (error) {
+        console.error('Get admin config error:', error);
+        res.status(500).json({ success: false, message: 'Failed' });
+    }
+});
+
+app.put('/api/admin/config', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        const { requiredVersion, forceUpdate, updateMessage, updateUrl } = req.body;
+        const now = new Date().toISOString();
+
+        const stmt = await db.run(
+            `INSERT INTO app_config (key, value, updatedAt) VALUES 
+            ('requiredVersion', ?, ?), ('forceUpdate', ?, ?), ('updateMessage', ?, ?), ('updateUrl', ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value, updatedAt=excluded.updatedAt`,
+            [
+                requiredVersion, now,
+                String(forceUpdate), now,
+                updateMessage, now,
+                updateUrl, now
+            ]
+        );
+        res.json({ success: true, message: 'Config updated' });
+    } catch (error) {
+        console.error('Update admin config error:', error);
+        res.status(500).json({ success: false, message: 'Failed' });
+    }
+});
+
+// 2. User Management
+app.get('/api/admin/users', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        const search = req.query.search as string;
+        let query = 'SELECT id, email, name, age, gender, weight, activityLevel, createdAt FROM users';
+        const params: any[] = [];
+
+        if (search) {
+            query += ' WHERE lower(name) LIKE ? OR lower(email) LIKE ?';
+            const term = `%${search.toLowerCase()}%`;
+            params.push(term, term);
+        }
+
+        query += ' ORDER BY createdAt DESC LIMIT 50'; // Limit results
+
+        const users = await db.query(query, params);
+        const countRes = await db.get('SELECT COUNT(*) as count FROM users');
+
+        res.json({ success: true, data: users, count: countRes?.count || 0 });
+    } catch (error) {
+        console.error('Admin users error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch users' });
+    }
+});
+
+app.put('/api/admin/users/:id/password', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { password } = req.body;
+
+        if (!password || password.length < 6) return res.status(400).json({ success: false, message: 'Password too short' });
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, id]);
+
+        res.json({ success: true, message: 'Password updated' });
+    } catch (error) {
+        console.error('Admin reset pass error:', error);
+        res.status(500).json({ success: false, message: 'Failed' });
+    }
+});
+
+// 3. Approvals (Foods)
+app.get('/api/admin/food-submissions', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        // User submissions are foods with isActive = 0
+        const foods = await db.query('SELECT * FROM foods WHERE isActive = 0 ORDER BY createdAt DESC');
+        res.json({ success: true, data: foods });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'DB Error' });
+    }
+});
+
+app.post('/api/admin/food-submissions/:id/approve', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        await db.run('UPDATE foods SET isActive = 1 WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Approved' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed' });
+    }
+});
+
+app.delete('/api/admin/food-submissions/:id', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        await db.run('DELETE FROM foods WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Rejected/Deleted' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed' });
+    }
+});
+
+// 4. Approvals (Exercises)
+app.get('/api/admin/exercise-submissions', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        // User submissions are exercises with isActive = 0
+        const exercises = await db.query('SELECT * FROM exercises WHERE isActive = 0 ORDER BY createdAt DESC');
+        res.json({ success: true, data: exercises });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'DB Error' });
+    }
+});
+
+app.post('/api/admin/exercise-submissions/:id/approve', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        await db.run('UPDATE exercises SET isActive = 1 WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Approved' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed' });
+    }
+});
+
+app.delete('/api/admin/exercise-submissions/:id', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        await db.run('DELETE FROM exercises WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Rejected/Deleted' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed' });
+    }
+});
+
+// ============ PUBLIC DATA ENDPOINTS ============
 
 // Get Foods
 app.get('/api/foods', async (req: Request, res: Response) => {
@@ -411,33 +577,94 @@ app.post('/api/exercises/submit', async (req: Request, res: Response) => {
     }
 });
 
-// ============ ADMIN ENDPOINTS (Simplified) ============
-// Reuse generic db queries
-
-app.get('/api/admin/foods', async (req: Request, res: Response) => {
+// Admin CRUD (Foods)
+app.get('/api/admin/foods', checkAdminAuth, async (req: Request, res: Response) => {
     try {
         const data = await db.query('SELECT * FROM foods');
         res.json({ success: true, data, count: data.length });
     } catch (error) { res.status(500).json({ error: 'DB Error' }) }
 });
 
-app.post('/api/admin/foods', async (req: Request, res: Response) => {
+app.post('/api/admin/foods', checkAdminAuth, async (req: Request, res: Response) => {
     try {
         const id = `food_${Date.now()}`;
-        const { name, calories, protein, carbs, fat } = req.body;
+        const { name, calories, protein, carbs, fat, emoji } = req.body;
         await db.run(
-            'INSERT INTO foods (id, name, calories, protein, carbs, fat, isActive, createdAt) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
-            [id, name, calories, protein, carbs, fat, new Date().toISOString()]
+            'INSERT INTO foods (id, name, calories, protein, carbs, fat, emoji, isActive, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)',
+            [id, name, calories, protein, carbs, fat, emoji || '🍽️', new Date().toISOString()]
         );
         res.json({ success: true, data: { id, ...req.body } });
     } catch (error) { res.status(500).json({ error: 'DB Error' }) }
 });
 
-// Admin Exercise Endpoints
-app.get('/api/admin/exercises', async (req: Request, res: Response) => {
+app.put('/api/admin/foods/:id', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { name, calories, protein, carbs, fat, emoji } = req.body;
+        await db.run(
+            'UPDATE foods SET name=?, calories=?, protein=?, carbs=?, fat=?, emoji=? WHERE id=?',
+            [name, calories, protein, carbs, fat, emoji, id]
+        );
+        res.json({ success: true, data: { id, ...req.body } });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+app.delete('/api/admin/foods/:id', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        await db.run('DELETE FROM foods WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Deleted' });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+// Admin CRUD (Exercises)
+app.get('/api/admin/exercises', checkAdminAuth, async (req: Request, res: Response) => {
     try {
         const data = await db.query('SELECT * FROM exercises');
         res.json({ success: true, data, count: data.length });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+app.post('/api/admin/exercises', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        const id = `ex_admin_${Date.now()}`;
+        const { name, category, difficulty, equipment, targetMuscles, gifUrl, description, instructions } = req.body;
+        const now = new Date().toISOString();
+
+        await db.run(
+            `INSERT INTO exercises (id, name, category, difficulty, equipment, targetMuscles, gifUrl, description, instructions, isActive, createdAt)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+            [
+                id, name, category, difficulty || 'beginner', equipment || 'bodyweight',
+                JSON.stringify(targetMuscles || []), gifUrl || '', description || '', instructions || '', now
+            ]
+        );
+        res.json({ success: true, data: { id, ...req.body } });
+    } catch (error: any) {
+        console.error("Admin Create Exercise Error", error);
+        res.status(500).json({ error: 'DB Error' })
+    }
+});
+
+app.put('/api/admin/exercises/:id', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { name, category, difficulty, equipment, targetMuscles, gifUrl, description, instructions } = req.body;
+
+        await db.run(
+            `UPDATE exercises SET name=?, category=?, difficulty=?, equipment=?, targetMuscles=?, gifUrl=?, description=?, instructions=? WHERE id=?`,
+            [
+                name, category, difficulty, equipment,
+                JSON.stringify(targetMuscles || []), gifUrl, description, instructions, id
+            ]
+        );
+        res.json({ success: true, data: { id, ...req.body } });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+app.delete('/api/admin/exercises/:id', checkAdminAuth, async (req: Request, res: Response) => {
+    try {
+        await db.run('DELETE FROM exercises WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Deleted' });
     } catch (error) { res.status(500).json({ error: 'DB Error' }) }
 });
 
