@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { db } from './lib/db'; // SQLite Wrapper
 import bcrypt from 'bcryptjs';
@@ -23,16 +23,36 @@ app.use((req, res, next) => {
 });
 
 // App Config Endpoint (Version Check)
-app.get('/api/config/app-version', (req: Request, res: Response) => {
-    res.json({
-        success: true,
-        data: {
+// App Config Endpoint (Version Check)
+app.get('/api/config/app-version', async (req: Request, res: Response) => {
+    try {
+        // Fetch from DB or use defaults
+        const rows = await db.query('SELECT key, value FROM app_config');
+        const config: any = {
             requiredVersion: '1.0.0',
-            forceUpdate: false,
+            forceUpdate: 'false',
             updateMessage: 'Please update directly from GitHub.',
             updateUrl: 'https://github.com/sarvast/Caloriv/releases'
+        };
+
+        if (rows) {
+            rows.forEach((row: any) => config[row.key] = row.value);
         }
-    });
+
+        res.json({
+            success: true,
+            data: {
+                requiredVersion: config.requiredVersion,
+                forceUpdate: config.forceUpdate === 'true',
+                updateMessage: config.updateMessage,
+                updateUrl: config.updateUrl
+            }
+        });
+    } catch (e) {
+        console.error("App Config Error", e);
+        // Fallback if DB fails
+        res.json({ success: true, data: { requiredVersion: '1.0.0', forceUpdate: false, updateMessage: 'Update available', updateUrl: '' } });
+    }
 });
 
 // ============ USER MEASUREMENTS ============
