@@ -241,8 +241,9 @@ function migrate() {
             FOREIGN KEY(user_id) REFERENCES users(id)
         )`);
 
-        // Create App Config Table
-        db.run(`CREATE TABLE IF NOT EXISTS app_config (
+        // Re-create App Config Table (Drop first to ensure schema integrity)
+        db.run('DROP TABLE IF EXISTS app_config');
+        db.run(`CREATE TABLE app_config (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL,
             updatedAt TEXT
