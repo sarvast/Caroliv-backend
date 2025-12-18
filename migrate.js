@@ -323,6 +323,11 @@ function migrate() {
         foodStmt.finalize(() => {
             console.log(`✅ Inserted ${foods.length} foods with macros`);
 
+            // 4. Ensure Users Table has currentWeight (Fixes registration error)
+            db.run("ALTER TABLE users ADD COLUMN currentWeight INTEGER DEFAULT 0", (err) => {
+                if (!err) console.log("✅ Added 'currentWeight' column to users table");
+            });
+
             console.log('🎉 Migration complete!');
             console.log('');
             console.log('Summary:');
