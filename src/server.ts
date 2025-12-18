@@ -86,7 +86,7 @@ app.post('/api/ai/analyze-food', async (req: Request, res: Response) => {
 // ============ AUTH ENDPOINTS ============
 
 // Login
-app.post('/api/login', async (req: Request, res: Response) => {
+app.post('/api/auth/login', async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
 
@@ -130,7 +130,7 @@ app.post('/api/login', async (req: Request, res: Response) => {
 });
 
 // Register
-app.post('/api/register', async (req: Request, res: Response) => {
+app.post('/api/auth/register', async (req: Request, res: Response) => {
     try {
         const { email, password, name, age, gender, weight, height, targetWeight, goal, activityLevel } = req.body;
 
@@ -194,8 +194,31 @@ app.post('/api/register', async (req: Request, res: Response) => {
     }
 });
 
-// Sync Profile
-app.post('/api/syncprofile', async (req: Request, res: Response) => {
+// Get Profile
+app.get('/api/users/profile', async (req: Request, res: Response) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+        const user = await db.get('SELECT * FROM users WHERE email = ?', [decoded.email]);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        // Remove password before returning
+        delete user.password;
+        res.json({ success: true, user });
+
+    } catch (error: any) {
+        console.error('Get profile error:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch profile' });
+    }
+});
+
+// Update Profile
+app.put('/api/users/profile', async (req: Request, res: Response) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
