@@ -22,6 +22,85 @@ app.use((req, res, next) => {
     next();
 });
 
+// App Config Endpoint (Version Check)
+app.get('/api/config/app-version', (req: Request, res: Response) => {
+    res.json({
+        success: true,
+        data: {
+            requiredVersion: '1.0.0',
+            forceUpdate: false,
+            updateMessage: 'Please update directly from GitHub.',
+            updateUrl: 'https://github.com/sarvast/Caloriv/releases'
+        }
+    });
+});
+
+// ============ USER MEASUREMENTS ============
+app.get('/api/users/measurements', async (req: Request, res: Response) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) return res.status(401).json({ success: false, message: 'No token' });
+
+        const token = authHeader.split(' ')[1];
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+
+        const measurements = await db.all(
+            'SELECT * FROM user_measurements WHERE user_id = ? ORDER BY date DESC',
+            [decoded.userId]
+        );
+
+        res.json({ success: true, data: measurements });
+    } catch (error) {
+        console.error('Get measurements error:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch measurements' });
+    }
+});
+
+app.post('/api/users/measurements', async (req: Request, res: Response) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) return res.status(401).json({ success: false, message: 'No token' });
+
+        const token = authHeader.split(' ')[1];
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+
+        const { date, chest, waist, arms, hips } = req.body;
+        const id = crypto.randomUUID();
+
+        await db.run(
+            `INSERT INTO user_measurements (id, user_id, date, chest, waist, arms, hips, createdAt)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [id, decoded.userId, date, chest, waist, arms, hips, new Date().toISOString()]
+        );
+
+        res.json({ success: true, message: 'Measurement saved' });
+    } catch (error) {
+        console.error('Save measurement error:', error);
+        res.status(500).json({ success: false, message: 'Failed to save measurement' });
+    }
+});
+
+// ============ PASSWORD RESET ============
+app.post('/api/auth/reset-password', async (req: Request, res: Response) => {
+    try {
+        const { email, newPassword, age } = req.body; // Basic validation using Age
+
+        const user = await db.get('SELECT * FROM users WHERE lower(email) = ?', [email.toLowerCase()]);
+
+        if (!user || user.age !== age) {
+            return res.status(400).json({ success: false, message: 'Invalid email or security verification failed' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id]);
+
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ success: false, message: 'Failed to reset password' });
+    }
+});
+
 // Health check
 app.get('/', (req: Request, res: Response) => {
     res.json({ status: 'Caroliv API is running (SQLite)', version: '3.1.2' });

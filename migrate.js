@@ -228,6 +228,19 @@ function migrate() {
       updatedAt TEXT
     )`);
 
+        // Create User Measurements Table
+        db.run(`CREATE TABLE IF NOT EXISTS user_measurements (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            chest REAL,
+            waist REAL,
+            arms REAL,
+            hips REAL,
+            createdAt TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )`);
+
         // Ensure isActive defaults to 1 for migration items is handled in insert
         // Note: Submitted exercises will be inserted with isActive=0 via the API
 

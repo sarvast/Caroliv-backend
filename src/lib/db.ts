@@ -61,6 +61,19 @@ class Database {
             });
         });
     }
+
+    all(sql: string, params: any[] = []): Promise<any[]> {
+        return new Promise((resolve, reject) => {
+            this.db.all(sql, params, (err: any, rows: any[]) => {
+                if (err) {
+                    console.error('Database error:', err);
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
+        });
+    }
 }
 
 export const db = new Database();
