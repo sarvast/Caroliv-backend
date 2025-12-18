@@ -12,7 +12,8 @@ const JWT_SECRET = process.env.JWT_SECRET || '##hellosarvasva69';
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Increase limit for images
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Debug Middleware
 app.use((req, res, next) => {
