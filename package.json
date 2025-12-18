@@ -7,7 +7,7 @@
         "start": "node dist/src/server.js",
         "dev": "nodemon --exec ts-node src/server.ts",
         "build": "tsc",
-        "migrate": "ts-node src/migrate.ts",
+        "migrate": "node migrate.js",
         "lint": "tsc --noEmit",
         "test": "echo \"No tests yet\""
     },
