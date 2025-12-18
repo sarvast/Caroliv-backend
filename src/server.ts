@@ -14,74 +14,19 @@ const JWT_SECRET = process.env.JWT_SECRET || '##hellosarvasva69';
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increase limit for images
 
+// Debug Middleware
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log('Body:', JSON.stringify(req.body).substring(0, 500)); // Log first 500 chars of body
+    next();
+});
+
 // Health check
 app.get('/', (req: Request, res: Response) => {
-    res.json({ status: 'Caroliv API is running (SQLite)', version: '3.1.0' });
+    res.json({ status: 'Caroliv API is running (SQLite)', version: '3.1.2' });
 });
 
-// ============ AI ENDPOINT ============
-app.post('/api/ai/analyze-food', async (req: Request, res: Response) => {
-    try {
-        const { image, text } = req.body;
-        const apiKey = process.env.GEMINI_API_KEY;
-
-        if (!apiKey) {
-            return res.status(500).json({ success: false, message: 'Gemini API Key missing' });
-        }
-
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        const prompt = `Analyze this food and identify the food item name and estimate calories and macros (protein, carbs, fat) for a standard serving. 
-        Detailed requirements:
-        1. Identify the food name clearly.
-        2. Estimate calories (kcal).
-        3. Estimate protein (g), carbs (g), fat (g).
-        4. Suggest a serving size.
-        
-        Return STRICTLY valid JSON only, no markdown, no other text.
-        Format:
-        {
-            "name": "Food Name",
-            "calories": 0,
-            "protein": 0,
-            "carbs": 0,
-            "fat": 0,
-            "servingSize": "1 plate"
-        }`;
-
-        let result;
-        if (image) {
-            const cleanImage = image.replace(/^data:image\/\w+;base64,/, "");
-            const imagePart = {
-                inlineData: {
-                    data: cleanImage,
-                    mimeType: "image/jpeg"
-                }
-            };
-            result = await model.generateContent([prompt, imagePart]);
-        } else if (text) {
-            result = await model.generateContent([prompt, `Food description: ${text}`]);
-        } else {
-            return res.status(400).json({ success: false, message: 'Image or text required' });
-        }
-
-        const response = await result.response;
-        const textResponse = response.text();
-
-        console.log('Gemini Response:', textResponse);
-
-        // Clean markdown if present
-        const cleaned = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-        const json = JSON.parse(cleaned);
-
-        res.json({ success: true, data: json });
-
-    } catch (error: any) {
-        console.error("AI Analysis Error:", error);
-        res.status(500).json({ success: false, message: "AI Analysis failed", error: error.message });
-    }
-});
+// ... AI Endpoint ...
 
 // ============ AUTH ENDPOINTS ============
 
@@ -89,23 +34,29 @@ app.post('/api/ai/analyze-food', async (req: Request, res: Response) => {
 app.post('/api/auth/login', async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
+        console.log(`Login attempt for: ${email}`);
 
         if (!email || !password) {
+            console.log('❌ Missing email or password');
             return res.status(400).json({ success: false, message: 'Email and password required' });
         }
 
         const user = await db.get('SELECT * FROM users WHERE lower(email) = ?', [email.toLowerCase()]);
 
         if (!user) {
+            console.log('❌ User not found in DB');
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
+        console.log(`User found: ${user.id}, checking password...`);
         const isValidPassword = await bcrypt.compare(password, user.password);
 
         if (!isValidPassword) {
+            console.log('❌ Password mismatch');
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
+        console.log('✅ Password matched, generating token...');
         const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
 
         res.json({
