@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || '##hellosarvasva69';
 
 // Middleware
