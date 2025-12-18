@@ -36,6 +36,13 @@ const exerciseData = [
     { name: 'Dumbbell Shoulder Press', category: 'shoulders', difficulty: 'intermediate', equipment: 'dumbbells', targetMuscles: ['Shoulders', 'Triceps'], gifUrl: 'https://barbend.com/wp-content/uploads/2023/10/seated-dumbbell-shoulder-press-barbend-movement-gif-masters-2.gif', defaultSets: '3 × 15' },
     { name: 'Lateral Raises', category: 'shoulders', difficulty: 'beginner', equipment: 'dumbbells', targetMuscles: ['Shoulders'], gifUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/32.gif', defaultSets: '3 × 20' },
 
+    // CARDIO & HIIT
+    { name: 'Jumping Jacks', category: 'cardio', difficulty: 'beginner', equipment: 'bodyweight', targetMuscles: ['Full Body', 'Cardio'], gifUrl: 'https://media.tenor.com/lUlZ4v98QSAAAAAC/jumping-jacks.gif', defaultSets: '3 × 45 sec' },
+    { name: 'Burpees', category: 'cardio', difficulty: 'advanced', equipment: 'bodyweight', targetMuscles: ['Full Body', 'Cardio'], gifUrl: 'https://media.tenor.com/d_yJqVz3s0AAAAAC/burpees.gif', defaultSets: '3 × 15' },
+    { name: 'Mountain Climbers', category: 'cardio', difficulty: 'intermediate', equipment: 'bodyweight', targetMuscles: ['Core', 'Cardio'], gifUrl: 'https://post.healthline.com/wp-content/uploads/2020/09/Mountain-Climbers.gif', defaultSets: '3 × 30 sec' },
+    { name: 'High Knees', category: 'cardio', difficulty: 'beginner', equipment: 'bodyweight', targetMuscles: ['Legs', 'Cardio'], gifUrl: 'https://media.tenor.com/E1w8gO1i0tAAAAAC/high-knees.gif', defaultSets: '3 × 45 sec' },
+    { name: 'Bicycle Crunches', category: 'core', difficulty: 'intermediate', equipment: 'bodyweight', targetMuscles: ['Abs', 'Obliques'], gifUrl: 'https://i.pinimg.com/originals/1d/19/22/1d1922c069b27560d27c08271101859c.gif', defaultSets: '3 × 20' },
+
     // BACK
     { name: 'Bent-Over Dumbbell Rows', category: 'back', difficulty: 'intermediate', equipment: 'dumbbells', targetMuscles: ['Back', 'Biceps'], gifUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/88.gif', defaultSets: '4 × 15' },
     { name: 'One-Arm Dumbbell Rows', category: 'back', difficulty: 'intermediate', equipment: 'dumbbells', targetMuscles: ['Back', 'Biceps'], gifUrl: 'https://i.pinimg.com/originals/1c/7e/29/1c7e293b84e72ee9f7dc68c0e6ce071a.gif', defaultSets: '3 × 15' },
