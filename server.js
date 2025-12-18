@@ -113,28 +113,25 @@ function initDatabase() {
 
         // App Configuration table (for version control)
         db.run(`CREATE TABLE IF NOT EXISTS app_config (
-      id TEXT PRIMARY KEY,
-      requiredVersion TEXT NOT NULL,
-      forceUpdate INTEGER DEFAULT 0,
-      updateMessage TEXT,
-      updateUrl TEXT DEFAULT 'https://caloriv-web.vercel.app/',
-      createdAt TEXT,
-      updatedAt TEXT
-    )`);
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updatedAt TEXT
+        )`);
 
-        // Initialize default app config
-        db.get('SELECT id FROM app_config WHERE id = ?', ['default'], (err, row) => {
-            if (!row) {
-                const now = new Date().toISOString();
-                db.run(
-                    `INSERT INTO app_config (id, requiredVersion, forceUpdate, updateMessage, updateUrl, createdAt, updatedAt)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    ['default', '69.0.0', 0, 'A new version of Caloriv is available! Update now for the best experience.', 'https://caloriv-web.vercel.app/', now, now],
-                    (err) => {
-                        if (!err) console.log('✅ Default app config initialized');
-                    }
-                );
-            }
+        // Initialize default app config if empty
+        const now = new Date().toISOString();
+        const configs = [
+            ['requiredVersion', '1.0.0'],
+            ['forceUpdate', 'false'],
+            ['updateMessage', 'A new version of Caloriv is available! Update now for the best experience.'],
+            ['updateUrl', 'https://caloriv-web.vercel.app/']
+        ];
+
+        configs.forEach(([key, value]) => {
+            db.run(
+                `INSERT OR IGNORE INTO app_config (key, value, updatedAt) VALUES (?, ?, ?)`,
+                [key, value, now]
+            );
         });
 
         console.log('✅ Database tables initialized');
@@ -269,27 +266,29 @@ app.get('/', (req, res) => {
 
 // Get app version config (PUBLIC - used by mobile app on startup)
 app.get('/api/config/app-version', (req, res) => {
-    db.get('SELECT requiredVersion, forceUpdate, updateMessage, updateUrl FROM app_config WHERE id = ?', ['default'], (err, config) => {
+    db.all('SELECT key, value FROM app_config', [], (err, rows) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
-        if (!config) {
-            // Return default if not found
-            return res.json({
-                success: true,
-                data: {
-                    requiredVersion: '69.0.0',
-                    forceUpdate: false,
-                    updateMessage: 'A new version of Caloriv is available!',
-                    updateUrl: 'https://caloriv-web.vercel.app/'
-                }
+
+        const config = {
+            requiredVersion: '1.0.0',
+            forceUpdate: 'false',
+            updateMessage: 'A new version of Caloriv is available!',
+            updateUrl: 'https://caloriv-web.vercel.app/'
+        };
+
+        if (rows) {
+            rows.forEach(row => {
+                config[row.key] = row.value;
             });
         }
+
         res.json({
             success: true,
             data: {
                 requiredVersion: config.requiredVersion,
-                forceUpdate: config.forceUpdate === 1,
+                forceUpdate: config.forceUpdate === 'true' || config.forceUpdate === 1,
                 updateMessage: config.updateMessage,
                 updateUrl: config.updateUrl
             }
@@ -299,19 +298,25 @@ app.get('/api/config/app-version', (req, res) => {
 
 // Get app config (ADMIN)
 app.get('/api/admin/config', (req, res) => {
-    db.get('SELECT * FROM app_config WHERE id = ?', ['default'], (err, config) => {
+    db.all('SELECT key, value FROM app_config', [], (err, rows) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
-        if (!config) {
-            return res.status(404).json({ success: false, error: 'Config not found' });
+
+        const config = {};
+        if (rows) {
+            rows.forEach(row => {
+                if (row.key === 'forceUpdate') {
+                    config[row.key] = row.value === 'true' || row.value === 1;
+                } else {
+                    config[row.key] = row.value;
+                }
+            });
         }
+
         res.json({
             success: true,
-            data: {
-                ...config,
-                forceUpdate: config.forceUpdate === 1
-            }
+            data: config
         });
     });
 });
@@ -331,25 +336,37 @@ app.put('/api/admin/config', (req, res) => {
     }
 
     const now = new Date().toISOString();
-    const forceUpdateInt = forceUpdate ? 1 : 0;
+    const updates = [
+        ['requiredVersion', requiredVersion],
+        ['forceUpdate', String(forceUpdate)],
+        ['updateMessage', updateMessage],
+        ['updateUrl', updateUrl || 'https://caloriv-web.vercel.app/']
+    ];
 
-    db.run(
-        `UPDATE app_config SET requiredVersion = ?, forceUpdate = ?, updateMessage = ?, updateUrl = ?, updatedAt = ? WHERE id = ?`,
-        [requiredVersion, forceUpdateInt, updateMessage, updateUrl || 'https://caloriv-web.vercel.app/', now, 'default'],
-        function (err) {
-            if (err) {
-                return res.status(500).json({ success: false, error: err.message });
+    let completed = 0;
+    let hasError = false;
+
+    updates.forEach(([key, value]) => {
+        db.run(
+            `INSERT INTO app_config (key, value, updatedAt) VALUES (?, ?, ?)
+             ON CONFLICT(key) DO UPDATE SET value=excluded.value, updatedAt=excluded.updatedAt`,
+            [key, value, now],
+            (err) => {
+                if (err && !hasError) {
+                    hasError = true;
+                    return res.status(500).json({ success: false, error: err.message });
+                }
+                completed++;
+                if (completed === updates.length && !hasError) {
+                    console.log(`✅ App config updated: v${requiredVersion}, forceUpdate: ${forceUpdate}`);
+                    res.json({
+                        success: true,
+                        data: { requiredVersion, forceUpdate, updateMessage, updateUrl, updatedAt: now }
+                    });
+                }
             }
-            if (this.changes === 0) {
-                return res.status(404).json({ success: false, error: 'Config not found' });
-            }
-            console.log(`✅ App config updated: v${requiredVersion}, forceUpdate: ${forceUpdate}`);
-            res.json({
-                success: true,
-                data: { requiredVersion, forceUpdate, updateMessage, updateUrl, updatedAt: now }
-            });
-        }
-    );
+        );
+    });
 });
 
 // ==================== AUTHENTICATION ====================
