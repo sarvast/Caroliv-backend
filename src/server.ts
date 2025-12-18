@@ -215,6 +215,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
                 age: user.age,
                 gender: user.gender,
                 weight: user.weight,
+                currentWeight: user.weight, // Alias
                 height: user.height,
                 targetWeight: user.targetWeight,
                 goal: user.goal,
@@ -241,8 +242,9 @@ app.get('/api/users/profile', async (req: Request, res: Response) => {
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
         // Remove password before returning
+        // Remove password before returning
         delete user.password;
-        res.json({ success: true, user });
+        res.json({ success: true, user: { ...user, currentWeight: user.weight } }); // Add alias
 
     } catch (error: any) {
         console.error('Get profile error:', error);
@@ -261,7 +263,10 @@ app.put('/api/users/profile', async (req: Request, res: Response) => {
         const token = authHeader.substring(7);
         const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-        const { name, age, gender, weight, height, targetWeight, goal, activityLevel } = req.body;
+        const { name, age, gender, weight, currentWeight, height, targetWeight, goal, activityLevel } = req.body;
+
+        // Handle weight/currentWeight ambiguity
+        const finalWeight = weight || currentWeight;
 
         const user = await db.get('SELECT * FROM users WHERE email = ?', [decoded.email]);
 
@@ -273,7 +278,7 @@ app.put('/api/users/profile', async (req: Request, res: Response) => {
             name: name ?? user.name,
             age: age ?? user.age,
             gender: gender ?? user.gender,
-            weight: weight ?? user.weight,
+            weight: finalWeight ?? user.weight,
             height: height ?? user.height,
             targetWeight: targetWeight ?? user.targetWeight,
             goal: goal ?? user.goal,
@@ -286,7 +291,7 @@ app.put('/api/users/profile', async (req: Request, res: Response) => {
             [updated.name, updated.age, updated.gender, updated.weight, updated.height, updated.targetWeight, updated.goal, updated.activityLevel, updated.updatedAt, decoded.email]
         );
 
-        res.json({ success: true, user: { ...user, ...updated } }); // Return full user object
+        res.json({ success: true, user: { ...user, ...updated, currentWeight: updated.weight } }); // Return full user object with alias
     } catch (error: any) {
         console.error('Sync profile error:', error);
         res.status(500).json({ success: false, message: 'Profile sync failed' });
