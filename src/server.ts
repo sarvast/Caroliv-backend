@@ -357,15 +357,30 @@ app.get('/api/admin/exercises', async (req: Request, res: Response) => {
 
 
 // Razorpay Setup
+// Razorpay Setup
 const Razorpay = require('razorpay');
-// Note: In Azure Functions or local settings, these come from process.env via Values
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
 
+let razorpay: any = null;
+
+try {
+    if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+        razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
+        });
+        console.log('✅ Payments: Enabled (Razorpay)');
+    } else {
+        console.warn('⚠️ Payments: Disabled (Missing RAZORPAY_KEY_ID/SECRET)');
+    }
+} catch (error) {
+    console.error('❌ Failed to init Razorpay:', error);
+}
 
 app.post('/api/payment/create-order', async (req: any, res: any) => {
+    if (!razorpay) {
+        return res.status(503).json({ error: 'Payments are currently disabled on the server.' });
+    }
+
     try {
         const { amount, currency = 'INR' } = req.body; // Amount in smallest currency unit (paise)
 
