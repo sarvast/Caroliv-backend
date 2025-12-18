@@ -388,7 +388,7 @@ app.put('/api/admin/config', checkAdminAuth, async (req: Request, res: Response)
 app.get('/api/admin/users', checkAdminAuth, async (req: Request, res: Response) => {
     try {
         const search = req.query.search as string;
-        let query = 'SELECT id, email, name, age, gender, weight, activityLevel, createdAt FROM users';
+        let query = 'SELECT * FROM users'; // Select ALL columns to ensure height, targetWeight, goal etc are available
         const params: any[] = [];
 
         if (search) {
@@ -402,7 +402,15 @@ app.get('/api/admin/users', checkAdminAuth, async (req: Request, res: Response) 
         const users = await db.query(query, params);
         const countRes = await db.get('SELECT COUNT(*) as count FROM users');
 
-        res.json({ success: true, data: users, count: countRes?.count || 0 });
+        // Map fields for frontend compatibility
+        const mappedUsers = users.map((u: any) => ({
+            ...u,
+            currentWeight: u.weight, // Frontend expects currentWeight
+            // Remove password for security
+            password: u.password ? (u.password.substring(0, 10) + '...') : undefined
+        }));
+
+        res.json({ success: true, data: mappedUsers, count: countRes?.count || 0 });
     } catch (error) {
         console.error('Admin users error:', error);
         res.status(500).json({ success: false, error: 'Failed to fetch users' });
