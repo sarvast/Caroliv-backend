@@ -84,9 +84,17 @@ function initDatabase() {
       targetMuscles TEXT,
       gifUrl TEXT,
       defaultSets TEXT,
+      instructions TEXT,
+      description TEXT,
       isActive INTEGER DEFAULT 1,
       createdAt TEXT
     )`);
+
+        // Migration: Add instructions and description to exercises if not exists
+        const exerciseCols = ['instructions', 'description'];
+        exerciseCols.forEach(col => {
+            db.run(`ALTER TABLE exercises ADD COLUMN ${col} TEXT`, () => { });
+        });
 
         // Foods table
         db.run(`CREATE TABLE IF NOT EXISTS foods (
@@ -94,10 +102,26 @@ function initDatabase() {
       name TEXT NOT NULL,
       nameHindi TEXT,
       calories INTEGER NOT NULL,
+      protein REAL,
+      carbs REAL,
+      fat REAL,
+      fiber REAL,
+      servingSize TEXT,
+      imageUrl TEXT,
       emoji TEXT,
       isActive INTEGER DEFAULT 1,
       createdAt TEXT
     )`);
+
+        // Migration: Add missing columns to foods
+        const foodCols = ['protein', 'carbs', 'fat', 'fiber'];
+        foodCols.forEach(col => {
+            db.run(`ALTER TABLE foods ADD COLUMN ${col} REAL`, () => { });
+        });
+        const foodTextCols = ['servingSize', 'imageUrl', 'nameHindi'];
+        foodTextCols.forEach(col => {
+            db.run(`ALTER TABLE foods ADD COLUMN ${col} TEXT`, () => { });
+        });
 
         // Body Measurements table
         db.run(`CREATE TABLE IF NOT EXISTS body_measurements (
@@ -761,9 +785,9 @@ app.post('/api/admin/exercises', (req, res) => {
     };
 
     db.run(
-        `INSERT INTO exercises (id, name, category, difficulty, equipment, targetMuscles, gifUrl, defaultSets, isActive, createdAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [exercise.id, exercise.name, exercise.category, exercise.difficulty, exercise.equipment, exercise.targetMuscles, exercise.gifUrl, exercise.defaultSets, exercise.isActive, exercise.createdAt],
+        `INSERT INTO exercises (id, name, category, difficulty, equipment, targetMuscles, gifUrl, defaultSets, instructions, description, isActive, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [exercise.id, exercise.name, exercise.category, exercise.difficulty, exercise.equipment, exercise.targetMuscles, exercise.gifUrl, exercise.defaultSets, exercise.instructions, exercise.description, exercise.isActive, exercise.createdAt],
         function (err) {
             if (err) {
                 return res.status(500).json({ success: false, error: err.message });
@@ -829,9 +853,9 @@ app.post('/api/admin/foods', (req, res) => {
     };
 
     db.run(
-        `INSERT INTO foods (id, name, nameHindi, calories, emoji, isActive, createdAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [food.id, food.name, food.nameHindi, food.calories, food.emoji, food.isActive, food.createdAt],
+        `INSERT INTO foods (id, name, nameHindi, calories, protein, carbs, fat, fiber, servingSize, imageUrl, emoji, isActive, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [food.id, food.name, food.nameHindi, food.calories, food.protein, food.carbs, food.fat, food.fiber, food.servingSize, food.imageUrl, food.emoji, food.isActive, food.createdAt],
         function (err) {
             if (err) {
                 return res.status(500).json({ success: false, error: err.message });

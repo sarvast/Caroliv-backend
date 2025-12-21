@@ -1,0 +1,2 @@
+Ready to pull!
+Updated server.js with database migrations for new columns.
