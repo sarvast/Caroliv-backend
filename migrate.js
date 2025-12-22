@@ -324,7 +324,11 @@ function migrate() {
             const n = food.name.toLowerCase();
             const t = (food.searchTerms || '').toLowerCase();
 
-            if (n.includes('tea') || n.includes('chai') || n.includes('coffee')) tags = 'sugar,biscuit,rusk,cookie';
+            if (n.includes('tea') || n.includes('chai') || n.includes('coffee')) {
+                // If it's explicitly "No Sugar", suggest Sugar. If it's already "Sweet", don't.
+                if (n.includes('no sugar') || n.includes('unsweetened')) tags = 'sugar,biscuit,rusk,cookie,bun';
+                else tags = 'biscuit,rusk,cookie,bun'; // Already sweet, just snacks
+            }
             else if (n.includes('samosa') || n.includes('pakora') || n.includes('kachori') || n.includes('tikki') || n.includes('vada')) tags = 'green chutney,ketchup,tea,chutney';
             else if (n.includes('paratha') || n.includes('thepla') || n.includes('kulcha')) tags = 'yogurt,pickle,butter,curd';
             else if (n.includes('roti') || n.includes('chapati') || n.includes('naan')) tags = 'dal,curry,paneer,chicken,onion salad';
