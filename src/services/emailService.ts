@@ -3,16 +3,22 @@ import nodemailer from 'nodemailer';
 // Configure the email transporter
 // We use a function to create it so we can pick up the latest env vars
 const createTransporter = () => {
-    const user = process.env.GMAIL_USER?.trim() || '';
-    const pass = process.env.GMAIL_PASS?.replace(/[^a-zA-Z]/g, '') || ''; // Keep ONLY letters
+    const user = (process.env.GMAIL_USER || '').trim();
+    const rawPass = process.env.GMAIL_PASS || '';
+    const pass = rawPass.replace(/[^a-zA-Z]/g, '');
 
-    // Log length for debugging (Safe, doesn't show the password)
-    console.log(`[DEBUG] SMTP Config - User: ${user}, Pass Length: ${pass.length}`);
+    console.log(`[DEBUG] SMTP DIAGNOSTICS:`);
+    console.log(`- User: [${user}]`);
+    console.log(`- Raw Pass Length: ${rawPass.length}`);
+    console.log(`- Cleaned (Letters only) Length: ${pass.length}`);
+
+    if (pass.length > 0) {
+        const masked = pass.substring(0, 2) + '*'.repeat(pass.length - 4) + pass.substring(pass.length - 2);
+        console.log(`- Masked Password: [${masked}]`);
+    }
 
     return nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // Use SSL
+        service: 'gmail',
         auth: { user, pass },
     });
 };
