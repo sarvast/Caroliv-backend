@@ -1,20 +1,35 @@
 import nodemailer from 'nodemailer';
 
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
+import { logger } from '../lib/logger';
+
 // Configure the email transporter
 // We use a function to create it so we can pick up the latest env vars
 const createTransporter = () => {
-    const user = (process.env.GMAIL_USER || '').trim();
-    const rawPass = process.env.GMAIL_PASS || '';
+    let user = (process.env.GMAIL_USER || '').trim();
+    let rawPass = process.env.GMAIL_PASS || '';
+
+    // FALLBACK: Try reading env.prod directly from ROOT (Safe for dist/ vs src/)
+    const prodEnvPath = path.resolve(process.cwd(), 'env.prod');
+    if (fs.existsSync(prodEnvPath)) {
+        console.log(`[DEBUG] Found env.prod at ${prodEnvPath}, reading credentials...`);
+        const envConfig = dotenv.parse(fs.readFileSync(prodEnvPath));
+        if (envConfig.GMAIL_USER) user = envConfig.GMAIL_USER.trim();
+        if (envConfig.GMAIL_PASS) rawPass = envConfig.GMAIL_PASS;
+    }
+
     // Aggressively remove EVERY non-letter character including hidden ones
     const pass = rawPass.replace(/[^a-zA-Z]/g, '');
 
     console.log(`[DEBUG] SMTP DIAGNOSTICS:`);
     console.log(`- User: [${user}]`);
-    console.log(`- Cleaned (Letters only) Length: ${pass.length}`);
+    console.log(`- Cleaned Length: ${pass.length}`);
 
     if (pass.length > 0) {
         // Show only first and last char for security but verify they are what we expect
-        console.log(`- First Letter: ${pass[0]}, Last Letter: ${pass[pass.length - 1]}`);
+        console.log(`- First: ${pass[0]}, Last: ${pass[pass.length - 1]}`);
     }
 
     return nodemailer.createTransport({
