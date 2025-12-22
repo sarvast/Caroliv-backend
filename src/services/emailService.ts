@@ -5,16 +5,16 @@ import nodemailer from 'nodemailer';
 const createTransporter = () => {
     const user = (process.env.GMAIL_USER || '').trim();
     const rawPass = process.env.GMAIL_PASS || '';
+    // Aggressively remove EVERY non-letter character including hidden ones
     const pass = rawPass.replace(/[^a-zA-Z]/g, '');
 
     console.log(`[DEBUG] SMTP DIAGNOSTICS:`);
     console.log(`- User: [${user}]`);
-    console.log(`- Raw Pass Length: ${rawPass.length}`);
     console.log(`- Cleaned (Letters only) Length: ${pass.length}`);
 
     if (pass.length > 0) {
-        const masked = pass.substring(0, 2) + '*'.repeat(pass.length - 4) + pass.substring(pass.length - 2);
-        console.log(`- Masked Password: [${masked}]`);
+        // Show only first and last char for security but verify they are what we expect
+        console.log(`- First Letter: ${pass[0]}, Last Letter: ${pass[pass.length - 1]}`);
     }
 
     return nodemailer.createTransport({
