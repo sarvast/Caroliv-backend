@@ -6,8 +6,8 @@ const createTransporter = () => {
     return nodemailer.createTransport({
         service: 'gmail',
         auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_PASS, // App Password
+            user: process.env.GMAIL_USER?.trim(),
+            pass: process.env.GMAIL_PASS?.trim(), // Ensure no whitespace issues
         },
     });
 };
@@ -19,9 +19,12 @@ const createTransporter = () => {
  */
 export const sendOtpEmail = async (to: string, otp: string): Promise<boolean> => {
     if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
-        console.warn('⚠️ Email credentials missing. MOCK MODE: Logged OTP for dev testing:');
+        console.warn('⚠️ Email Configuration Missing:');
+        if (!process.env.GMAIL_USER) console.warn('   - GMAIL_USER is NOT set in .env');
+        if (!process.env.GMAIL_PASS) console.warn('   - GMAIL_PASS is NOT set in .env');
+        console.warn('🛠️ MOCK MODE: Logged OTP for dev testing:');
         console.log(`🔑 OTP for ${to}: [ ${otp} ]`);
-        return true; // Return true so the flow continues in mock mode
+        return true;
     }
 
     const transporter = createTransporter();
