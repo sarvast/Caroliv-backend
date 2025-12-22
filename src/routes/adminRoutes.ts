@@ -199,6 +199,21 @@ router.post('/foods', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'DB Error' }) }
 });
 
+router.put('/foods/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, nameHindi, calories, protein, carbs, fat, emoji, pairingTags, isActive } = req.body;
+        await db.run(
+            `UPDATE foods SET 
+                name = ?, nameHindi = ?, calories = ?, protein = ?, carbs = ?, 
+                fat = ?, emoji = ?, pairingTags = ?, isActive = ?
+             WHERE id = ?`,
+            [name, nameHindi, calories, protein, carbs, fat, emoji, pairingTags, isActive, id]
+        );
+        res.json({ success: true, message: 'Updated' });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
 router.delete('/foods/:id', async (req, res) => {
     try {
         await db.run('DELETE FROM foods WHERE id = ?', [req.params.id]);
@@ -206,6 +221,43 @@ router.delete('/foods/:id', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'DB Error' }) }
 });
 
-/* ... similar CRUD for exercises ... */
+// 5. Promotion Management
+router.get('/promotions', async (req, res) => {
+    try {
+        const rows = await db.all('SELECT * FROM promotions ORDER BY createdAt DESC');
+        res.json({ success: true, data: rows });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+router.post('/promotions', async (req, res) => {
+    try {
+        const id = `promo_${Date.now()}`;
+        const { title, imageUrl, externalLink, delayDays, isActive } = req.body;
+        await db.run(
+            'INSERT INTO promotions (id, title, imageUrl, externalLink, delayDays, isActive, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [id, title, imageUrl, externalLink, delayDays || 0, isActive === false ? 0 : 1, new Date().toISOString()]
+        );
+        res.json({ success: true, data: { id, ...req.body } });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+router.put('/promotions/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, imageUrl, externalLink, delayDays, isActive } = req.body;
+        await db.run(
+            'UPDATE promotions SET title = ?, imageUrl = ?, externalLink = ?, delayDays = ?, isActive = ? WHERE id = ?',
+            [title, imageUrl, externalLink, delayDays, isActive === false ? 0 : 1, id]
+        );
+        res.json({ success: true, message: 'Updated' });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+router.delete('/promotions/:id', async (req, res) => {
+    try {
+        await db.run('DELETE FROM promotions WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Deleted' });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
 
 export default router;

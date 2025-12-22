@@ -13,16 +13,26 @@ router.get('/announcements', async (req, res) => {
 
 // 1. Ad Configuration
 router.get('/promotion', async (req, res) => {
-    // Hardcoded for now, can be moved to DB later
-    res.json({
-        success: true,
-        data: {
-            isActive: true,
-            imageUrl: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800', // Example fitness image
-            externalLink: 'https://caroliv-gym-gear.com', // Placeholder
-            delayDays: 2
+    try {
+        const promo = await db.get('SELECT * FROM promotions WHERE isActive = 1 ORDER BY createdAt DESC LIMIT 1');
+
+        if (promo) {
+            return res.json({ success: true, data: promo });
         }
-    });
+
+        // Default Fallback
+        res.json({
+            success: true,
+            data: {
+                isActive: true,
+                imageUrl: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800',
+                externalLink: 'https://caloriv-gear.com',
+                delayDays: 2
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'DB Error' });
+    }
 });
 
 // 2. Social Proof / Activity Stats

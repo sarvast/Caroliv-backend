@@ -47,8 +47,8 @@ app.use('/api/features', featureRoutes);
 app.get('/', (req, res) => {
     res.json({
         status: 'Online',
-        version: '3.2.0 (Optimized)',
-        features: ['Leaderboard', 'Shields', 'Announcements']
+        version: '1.0.0 (Caloriv Pro)',
+        features: ['Leaderboard', 'Shields', 'Announcements', 'Smart Pairing']
     });
 });
 

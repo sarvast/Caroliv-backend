@@ -28,7 +28,20 @@ export const initDb = async () => {
             )
         `);
 
-        // 3. Run Migrations (Safe Column Additions)
+        // 3. Promotions Table (New: Dynamic Ads)
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS promotions (
+                id TEXT PRIMARY KEY,
+                title TEXT,
+                imageUrl TEXT NOT NULL,
+                externalLink TEXT NOT NULL,
+                delayDays INTEGER DEFAULT 0,
+                isActive INTEGER DEFAULT 1,
+                createdAt TEXT
+            )
+        `);
+
+        // 4. Run Migrations (Safe Column Additions)
         await safeAddColumn('foods', 'pairingTags', 'TEXT DEFAULT ""');
         await safeAddColumn('users', 'workoutLevel', 'TEXT DEFAULT "beginner"');
         await safeAddColumn('users', 'workoutGoal', 'TEXT DEFAULT "weight_loss"');
