@@ -1,18 +1,10 @@
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
-import path from 'path';
+import { db } from '../src/lib/db';
 
 async function seedSabjis() {
     console.log('🍛 Starting Indian Sabji Seed...');
 
     try {
-        const dbPath = path.resolve(__dirname, '../database.sqlite');
-        const db = await open({
-            filename: dbPath,
-            driver: sqlite3.Database
-        });
-
-        console.log('✅ Connected to SQLite database');
+        console.log('✅ Connected to SQLite database (via lib/db)');
 
         const foods = [
             { id: 'aloo_matar_1', name: 'Aloo Matar', nameHindi: 'आलू मटर', calories: 170, protein: 4, carbs: 20, fat: 9, servingSize: '1 bowl (200g)', emoji: '🥘', category: 'Vegetables', pairingTags: 'Roti, Paratha, Rice, Jeera Rice' },
@@ -45,7 +37,7 @@ async function seedSabjis() {
 
         for (const food of foods) {
             // Check if exists
-            const existing = await db.get('SELECT id FROM foods WHERE name = ?', food.name);
+            const existing = await db.get('SELECT id FROM foods WHERE name = ?', [food.name]);
             if (!existing) {
                 await db.run(
                     `INSERT INTO foods (id, name, nameHindi, calories, protein, carbs, fat, servingSize, emoji, category, pairingTags, isActive, createdAt) 
