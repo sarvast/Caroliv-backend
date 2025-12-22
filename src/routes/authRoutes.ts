@@ -104,6 +104,9 @@ router.post('/login', async (req, res) => {
         const lastLoginStr = user.lastLoginDate ? user.lastLoginDate.split('T')[0] : null;
         let currentStreak = user.currentStreak || 0;
 
+        // --- STREAK LOGIC START ---
+        let usedShield = false;
+
         // Only update if not logged in today
         if (lastLoginStr !== todayStr) {
             const yesterday = new Date();
@@ -113,13 +116,24 @@ router.post('/login', async (req, res) => {
             if (lastLoginStr === yesterdayStr) {
                 currentStreak += 1; // Continued streak
             } else {
-                currentStreak = 1; // Reset or New streak
+                // Missed a day! Check for Shield
+                const shields = user.streakShields || 0;
+                if (shields > 0) {
+                    // Consume Shield
+                    await db.run('UPDATE users SET streakShields = streakShields - 1 WHERE id = ?', [user.id]);
+                    usedShield = true;
+                    // Streak preserved (not incremented, but not reset)
+                    // currentStreak remains same
+                    console.log(`🛡️ User ${user.email} used a Streak Shield!`);
+                } else {
+                    currentStreak = 1; // Reset
+                }
             }
 
-            // Update DB (Async but don't await blocking response significantly)
-            db.run('UPDATE users SET currentStreak = ?, lastLoginDate = ? WHERE id = ?',
+            // Update DB
+            await db.run('UPDATE users SET currentStreak = ?, lastLoginDate = ? WHERE id = ?',
                 [currentStreak, new Date().toISOString(), user.id]
-            ).catch(err => console.error('Failed to update streak:', err));
+            );
         }
         // --- STREAK LOGIC END ---
 
@@ -139,6 +153,8 @@ router.post('/login', async (req, res) => {
                 goal: user.goal,
                 activityLevel: user.activityLevel,
                 currentStreak: currentStreak,
+                streakShields: (user.streakShields || 0) - (usedShield ? 1 : 0),
+                protectionUsed: usedShield,
             }
         });
     } catch (error: any) {

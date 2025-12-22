@@ -7,6 +7,33 @@ const router = express.Router();
 
 router.use(checkAdminAuth); // Apply to all routes in this file
 
+// 0. Announcements
+router.get('/announcements', async (req, res) => {
+    try {
+        const rows = await db.all('SELECT * FROM announcements ORDER BY createdAt DESC');
+        res.json({ success: true, data: rows });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+router.post('/announcements', async (req, res) => {
+    try {
+        const { title, message, type, expiresAt } = req.body;
+        const id = `ann_${Date.now()}`;
+        await db.run(
+            'INSERT INTO announcements (id, title, message, type, expiresAt, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
+            [id, title, message, type || 'info', expiresAt || null, new Date().toISOString()]
+        );
+        res.json({ success: true, message: 'Posted' });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+router.delete('/announcements/:id', async (req, res) => {
+    try {
+        await db.run('DELETE FROM announcements WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Deleted' });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
 // 1. App Updates Config
 router.get('/config', async (req, res) => {
     try {

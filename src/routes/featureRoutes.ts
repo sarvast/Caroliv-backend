@@ -1,6 +1,15 @@
 import express from 'express';
 
+import { db } from '../lib/db';
 const router = express.Router();
+
+// 0. Announcements (Public/User)
+router.get('/announcements', async (req, res) => {
+    try {
+        const rows = await db.all('SELECT * FROM announcements WHERE isActive = 1 ORDER BY createdAt DESC LIMIT 1');
+        res.json({ success: true, data: rows });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
 
 // 1. Ad Configuration
 router.get('/promotion', async (req, res) => {

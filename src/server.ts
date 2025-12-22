@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { db } from './lib/db';
+import { initDb } from './lib/db-init';
+import { logger } from './lib/logger';
 
 // Import Routes
 import authRoutes from './routes/authRoutes';
@@ -18,57 +19,22 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Initialize DB Tables & Schema Updates
-const initDb = async () => {
-    try {
-        // Auth Tables
-        await db.run(`
-            CREATE TABLE IF NOT EXISTS password_resets (
-                email TEXT,
-                otp TEXT,
-                expiresAt TEXT,
-                createdAt TEXT
-            )
-        `);
-
-        // Check/Add 'pairingTags' column to 'foods' if missing
-        try {
-            await db.run(`ALTER TABLE foods ADD COLUMN pairingTags TEXT DEFAULT ''`);
-            console.log('✅ Added pairingTags column to foods table');
-        } catch (e: any) {
-            if (!e.message.includes('duplicate column name')) {
-                console.log('ℹ️ pairingTags column likely exists');
-            }
-        }
-
-        // Check/Add 'workoutLevel' and 'workoutGoal' to 'users' if missing
-        try {
-            await db.run(`ALTER TABLE users ADD COLUMN workoutLevel TEXT DEFAULT 'beginner'`);
-        } catch (e: any) { }
-        try {
-            await db.run(`ALTER TABLE users ADD COLUMN workoutGoal TEXT DEFAULT 'weight_loss'`);
-        } catch (e: any) { }
-
-        // Streak System Columns
-        try { await db.run(`ALTER TABLE users ADD COLUMN currentStreak INTEGER DEFAULT 0`); } catch (e) { }
-        try { await db.run(`ALTER TABLE users ADD COLUMN lastLoginDate TEXT DEFAULT ''`); } catch (e) { }
-
-
-        console.log('✅ Database initialized successfully');
-    } catch (error) {
-        console.error('❌ Failed to init DB:', error);
-    }
-};
-
-initDb();
-
-// Debug Logger
+// Request Logger Middleware
 app.use((req, res, next) => {
-    if (res.statusCode >= 400) {
-        console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - ${res.statusCode}`);
-    }
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        if (res.statusCode >= 400) {
+            logger.warn(`${req.method} ${req.url} - ${res.statusCode} (${duration}ms)`);
+        } else {
+            logger.debug(`${req.method} ${req.url} - ${res.statusCode} (${duration}ms)`);
+        }
+    });
     next();
 });
+
+// Initialize DB
+initDb();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -79,14 +45,27 @@ app.use('/api/features', featureRoutes);
 
 // Test Route
 app.get('/', (req, res) => {
-    res.json({ status: 'Online', version: '2.0.0 (Modular)' });
+    res.json({
+        status: 'Online',
+        version: '3.2.0 (Optimized)',
+        features: ['Leaderboard', 'Shields', 'Announcements']
+    });
 });
-
-// Payment (Razorpay - Optional)
-// ... (Can be moved to a separate paymentRoutes.ts later, kept here for simplicity if needed)
 
 // Start Server
-app.listen(PORT, () => {
-    console.log(`✅ Caroliv API running on port ${PORT}`);
-    console.log(`🚀 Mode: Modular Routes`);
+const server = app.listen(PORT, () => {
+    logger.info(`✅ Caroliv API running on port ${PORT}`);
+    logger.info(`🚀 Mode: Optimized for 1GB VM`);
 });
+
+// Graceful Shutdown
+const shutdown = () => {
+    logger.info('🛑 Sigterm received. Shutting down gracefully...');
+    server.close(() => {
+        logger.info('💥 Process terminated. Goodbye.');
+        process.exit(0);
+    });
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

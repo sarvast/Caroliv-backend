@@ -1,7 +1,7 @@
 {
-    "name": "caroliv-backend",
-    "version": "3.1.0",
-    "description": "Caroliv Backend with AI and Payments",
+    "name": "caloriv-backend",
+    "version": "1.0.0",
+    "description": "Caloriv Backend with AI and Payments",
     "main": "dist/src/server.js",
     "scripts": {
         "start": "node dist/src/server.js",
