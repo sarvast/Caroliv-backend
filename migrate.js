@@ -170,7 +170,19 @@ const foods = [
     { id: '107', name: '1 Rumali Roti', nameHindi: '1 रुमाली रोटी', calories: 200, protein: 5, carbs: 35, fat: 4, emoji: '🫓', category: 'dinner', searchTerms: 'rumali roti thin bread soft handkerchief exotic dinner' },
     { id: '108', name: '1 Plate Chicken Tikka (6 pcs)', nameHindi: '1 प्लेट चिकन टिक्का', calories: 300, protein: 35, carbs: 5, fat: 12, emoji: '🍢', category: 'dinner', searchTerms: 'chicken tikka kebab starter tandoori protein grilled nonveg' },
     { id: '109', name: '1 Plate Paneer Tikka (6 pcs)', nameHindi: '1 प्लेट पनीर टिक्का', calories: 320, protein: 18, carbs: 15, fat: 20, emoji: '🍢', category: 'dinner', searchTerms: 'paneer tikka kebab starter veg tandoori cottage cheese protein' },
-    { id: '110', name: '1 Bowl Oats Porridge', nameHindi: '1 कटोरी ओट्स', calories: 150, protein: 6, carbs: 25, fat: 3, emoji: '🥣', category: 'breakfast', searchTerms: 'oats porridge breakfast healthy fiber diet oatmeal weight loss' }];
+    { id: '110', name: '1 Bowl Oats Porridge', nameHindi: '1 कटोरी ओट्स', calories: 150, protein: 6, carbs: 25, fat: 3, emoji: '🥣', category: 'breakfast', searchTerms: 'oats porridge breakfast healthy fiber diet oatmeal weight loss' },
+    // Condiments & Sides (Crucial for Smart Pairing)
+    { id: '111', name: '1 Spoon Pickle (Achar)', nameHindi: '1 चम्मच अचार', calories: 25, protein: 0, carbs: 2, fat: 2, emoji: '🏺', category: 'lunch', searchTerms: 'pickle achar spicy mango lime chili side' },
+    { id: '112', name: '1 Spoon Green Chutney', nameHindi: '1 चम्मच हरी चटनी', calories: 15, protein: 0, carbs: 3, fat: 0, emoji: '🌿', category: 'snacks', searchTerms: 'green chutney mint coriander spicy dip samosa side' },
+    { id: '113', name: '1 Spoon Ketchup', nameHindi: '1 चम्मच केचप', calories: 20, protein: 0, carbs: 5, fat: 0, emoji: '🍅', category: 'snacks', searchTerms: 'ketchup tomato sauce sweet dip' },
+    { id: '114', name: '1 Spoon Coconut Chutney', nameHindi: '1 चम्मच नारियल चटनी', calories: 45, protein: 1, carbs: 2, fat: 4, emoji: '🥥', category: 'breakfast', searchTerms: 'coconut chutney white south indian idli dosa side' },
+    { id: '115', name: '1 Onion Salad', nameHindi: '1 प्याज सलाद', calories: 15, protein: 0, carbs: 3, fat: 0, emoji: '🧅', category: 'lunch', searchTerms: 'onion salad pyaz kachumber side raw lemon' },
+    { id: '116', name: '1 Wedge Lemon', nameHindi: '1 नींबू', calories: 5, protein: 0, carbs: 1, fat: 0, emoji: '🍋', category: 'lunch', searchTerms: 'lemon nimbu juice Vitamin C sour side' },
+    { id: '117', name: '1 Spoon Sugar', nameHindi: '1 चम्मच चीनी', calories: 20, protein: 0, carbs: 5, fat: 0, emoji: '🍚', category: 'breakfast', searchTerms: 'sugar chini sweet tea coffee additive' },
+    { id: '118', name: '1 Biscuit/Cookie', nameHindi: '1 बिस्कुट', calories: 40, protein: 0.5, carbs: 6, fat: 2, emoji: '🍪', category: 'snacks', searchTerms: 'biscuit cookie tea time snack parleg marie' },
+    { id: '119', name: '1 Rusk', nameHindi: '1 रस्क', calories: 50, protein: 1, carbs: 8, fat: 1, emoji: '🍞', category: 'snacks', searchTerms: 'rusk toast crunchy tea snack suji' },
+    { id: '120', name: '1 Spoon Sambar', nameHindi: '1 चम्मच सांबर', calories: 30, protein: 1, carbs: 5, fat: 1, emoji: '🥘', category: 'breakfast', searchTerms: 'sambar dip idli dosa side extra' }
+];
 
 function migrate() {
     const db = new sqlite3.Database(DB_PATH);
@@ -307,17 +319,23 @@ function migrate() {
                 else cat = 'dinner';
             }
 
-            // Define Smart Pairings based on keywords
+            // Define Smart Pairings based on keywords (Indian Context)
             let tags = '';
             const n = food.name.toLowerCase();
             const t = (food.searchTerms || '').toLowerCase();
 
             if (n.includes('tea') || n.includes('chai') || n.includes('coffee')) tags = 'sugar,biscuit,rusk,cookie';
-            else if (n.includes('samosa') || n.includes('pakora') || n.includes('kachori') || n.includes('tikki')) tags = 'chutney,ketchup,tea';
-            else if (n.includes('roti') || n.includes('chapati') || n.includes('paratha') || n.includes('rice') || n.includes('pulao')) tags = 'dal,curry,yogurt,pickle,salad';
-            else if (n.includes('idli') || n.includes('dosa') || n.includes('vada')) tags = 'sambar,chutney';
+            else if (n.includes('samosa') || n.includes('pakora') || n.includes('kachori') || n.includes('tikki') || n.includes('vada')) tags = 'green chutney,ketchup,tea,chutney';
+            else if (n.includes('paratha') || n.includes('thepla') || n.includes('kulcha')) tags = 'yogurt,pickle,butter,curd';
+            else if (n.includes('roti') || n.includes('chapati') || n.includes('naan')) tags = 'dal,curry,paneer,chicken,onion salad';
+            else if (n.includes('rice') || n.includes('pulao')) tags = 'dal,curry,yogurt,papad,pickle';
+            else if (n.includes('biryani')) tags = 'raita,onion salad,papad';
+            else if (n.includes('idli') || n.includes('dosa') || n.includes('uttapam')) tags = 'sambar,coconut chutney';
+            else if (n.includes('poha') || n.includes('upma')) tags = 'tea,sev,green chutney,lemon';
             else if (n.includes('bread') || n.includes('toast')) tags = 'butter,jam,egg';
-            else if (n.includes('dal') || n.includes('curry')) tags = 'roti,rice';
+            else if (n.includes('dal') || n.includes('curry') || n.includes('chole') || n.includes('rajma')) tags = 'roti,rice,onion salad,pickle,lemon';
+            else if (n.includes('khichdi')) tags = 'yogurt,papad,pickle,ghee';
+            else if (n.includes('pav') || n.includes('bhaji')) tags = 'onion salad,lemon,butter';
 
             foodStmt.run(
                 food.id,
