@@ -49,6 +49,10 @@ const initDb = async () => {
             await db.run(`ALTER TABLE users ADD COLUMN workoutGoal TEXT DEFAULT 'weight_loss'`);
         } catch (e: any) { }
 
+        // Streak System Columns
+        try { await db.run(`ALTER TABLE users ADD COLUMN currentStreak INTEGER DEFAULT 0`); } catch (e) { }
+        try { await db.run(`ALTER TABLE users ADD COLUMN lastLoginDate TEXT DEFAULT ''`); } catch (e) { }
+
 
         console.log('✅ Database initialized successfully');
     } catch (error) {

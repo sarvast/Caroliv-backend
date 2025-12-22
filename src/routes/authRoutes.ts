@@ -99,6 +99,30 @@ router.post('/login', async (req, res) => {
 
         const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
 
+        // --- STREAK LOGIC START ---
+        const todayStr = new Date().toISOString().split('T')[0];
+        const lastLoginStr = user.lastLoginDate ? user.lastLoginDate.split('T')[0] : null;
+        let currentStreak = user.currentStreak || 0;
+
+        // Only update if not logged in today
+        if (lastLoginStr !== todayStr) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            if (lastLoginStr === yesterdayStr) {
+                currentStreak += 1; // Continued streak
+            } else {
+                currentStreak = 1; // Reset or New streak
+            }
+
+            // Update DB (Async but don't await blocking response significantly)
+            db.run('UPDATE users SET currentStreak = ?, lastLoginDate = ? WHERE id = ?',
+                [currentStreak, new Date().toISOString(), user.id]
+            ).catch(err => console.error('Failed to update streak:', err));
+        }
+        // --- STREAK LOGIC END ---
+
         res.json({
             success: true,
             token,
@@ -114,6 +138,7 @@ router.post('/login', async (req, res) => {
                 targetWeight: user.targetWeight,
                 goal: user.goal,
                 activityLevel: user.activityLevel,
+                currentStreak: currentStreak,
             }
         });
     } catch (error: any) {
