@@ -23,15 +23,6 @@ const createTransporter = () => {
     // Aggressively remove EVERY non-letter character including hidden ones
     const pass = rawPass.replace(/[^a-zA-Z]/g, '');
 
-    console.log(`[DEBUG] SMTP DIAGNOSTICS:`);
-    console.log(`- User: [${user}]`);
-    console.log(`- Cleaned Length: ${pass.length}`);
-
-    if (pass.length > 0) {
-        // Show only first and last char for security but verify they are what we expect
-        console.log(`- First: ${pass[0]}, Last: ${pass[pass.length - 1]}`);
-    }
-
     return nodemailer.createTransport({
         service: 'gmail',
         auth: { user, pass },

@@ -207,19 +207,9 @@ router.post('/confirm-reset-password', async (req, res) => {
             [email.toLowerCase(), otp]
         );
 
-        console.log(`[DEBUG] Verification attempt for ${email} with OTP ${otp}`);
+        if (!record) return res.status(400).json({ success: false, message: 'Invalid OTP' });
 
-        if (!record) {
-            console.warn(`[DEBUG] No matching record found in password_resets for ${email}/${otp}`);
-            return res.status(400).json({ success: false, message: 'Invalid OTP' });
-        }
-
-        const now = new Date();
-        const expiresAt = new Date(record.expiresAt);
-        console.log(`[DEBUG] Record found. ExpiresAt: ${record.expiresAt}, CurrentTime: ${now.toISOString()}`);
-
-        if (expiresAt < now) {
-            console.warn(`[DEBUG] OTP expired for ${email}`);
+        if (new Date(record.expiresAt) < new Date()) {
             return res.status(400).json({ success: false, message: 'OTP Expired' });
         }
 

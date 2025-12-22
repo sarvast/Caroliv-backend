@@ -195,7 +195,7 @@ function migrate() {
       createdAt TEXT
     )`);
 
-        // Added protein, carbs, fat, searchTerms columns
+        // Added protein, carbs, fat, searchTerms columns + Smart Pairing
         db.run(`CREATE TABLE IF NOT EXISTS foods (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -207,6 +207,7 @@ function migrate() {
       emoji TEXT,
       category TEXT,
       searchTerms TEXT,
+      pairingTags TEXT,
       isActive INTEGER DEFAULT 1,
       createdAt TEXT
     )`);
@@ -289,10 +290,10 @@ function migrate() {
         exerciseStmt.finalize();
         console.log(`✅ Inserted ${exercises.length} exercises`);
 
-        // Insert foods with macro data
+        // Insert foods with macro data including pairingTags
         const foodStmt = db.prepare(`
-      INSERT INTO foods (id, name, nameHindi, calories, protein, carbs, fat, emoji, category, searchTerms, isActive, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+      INSERT INTO foods (id, name, nameHindi, calories, protein, carbs, fat, emoji, category, searchTerms, pairingTags, isActive, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     `);
 
         foods.forEach(food => {
@@ -306,6 +307,18 @@ function migrate() {
                 else cat = 'dinner';
             }
 
+            // Define Smart Pairings based on keywords
+            let tags = '';
+            const n = food.name.toLowerCase();
+            const t = (food.searchTerms || '').toLowerCase();
+
+            if (n.includes('tea') || n.includes('chai') || n.includes('coffee')) tags = 'sugar,biscuit,rusk,cookie';
+            else if (n.includes('samosa') || n.includes('pakora') || n.includes('kachori') || n.includes('tikki')) tags = 'chutney,ketchup,tea';
+            else if (n.includes('roti') || n.includes('chapati') || n.includes('paratha') || n.includes('rice') || n.includes('pulao')) tags = 'dal,curry,yogurt,pickle,salad';
+            else if (n.includes('idli') || n.includes('dosa') || n.includes('vada')) tags = 'sambar,chutney';
+            else if (n.includes('bread') || n.includes('toast')) tags = 'butter,jam,egg';
+            else if (n.includes('dal') || n.includes('curry')) tags = 'roti,rice';
+
             foodStmt.run(
                 food.id,
                 food.name,
@@ -315,8 +328,9 @@ function migrate() {
                 food.carbs || 0,
                 food.fat || 0,
                 food.emoji,
-                cat, // category
+                cat,
                 food.searchTerms || '',
+                tags, // pairingTags
                 new Date().toISOString()
             );
         });
