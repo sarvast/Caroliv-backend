@@ -7,7 +7,7 @@ const createTransporter = () => {
         service: 'gmail',
         auth: {
             user: process.env.GMAIL_USER?.trim(),
-            pass: process.env.GMAIL_PASS?.trim(), // Ensure no whitespace issues
+            pass: process.env.GMAIL_PASS?.replace(/\s/g, ''), // Strip all spaces/tabs/newlines
         },
     });
 };
