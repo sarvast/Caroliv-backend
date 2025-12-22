@@ -130,6 +130,22 @@ router.put('/users/:id/password', async (req, res) => {
     }
 });
 
+router.put('/users/:id/engagement', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { currentStreak, streakShields } = req.body;
+
+        await db.run(
+            'UPDATE users SET currentStreak = ?, streakShields = ? WHERE id = ?',
+            [currentStreak, streakShields, id]
+        );
+
+        res.json({ success: true, message: 'Engagement stats updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'DB Error' });
+    }
+});
+
 // 3. Approvals (Foods)
 router.get('/food-submissions', async (req, res) => {
     try {

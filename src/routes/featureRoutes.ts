@@ -51,4 +51,13 @@ router.get('/activity-stats', async (req, res) => {
     });
 });
 
+router.get('/config', async (req, res) => {
+    try {
+        const config = await db.get('SELECT * FROM app_config ORDER BY id DESC LIMIT 1');
+        res.json({ success: true, data: config });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'DB Error' });
+    }
+});
+
 export default router;
