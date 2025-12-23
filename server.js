@@ -400,7 +400,19 @@ app.get('/api/features/promotion', (req, res) => {
         [],
         (err, promotion) => {
             if (err) return res.status(500).json({ success: false, error: err.message });
-            res.json({ success: true, data: promotion || null });
+
+            // Transform response for mobile app compatibility
+            if (promotion) {
+                const transformed = {
+                    isActive: promotion.isActive === 1,
+                    imageUrl: promotion.imageUrl || '',
+                    externalLink: promotion.link || '',
+                    delayDays: 0 // Default to 0 days
+                };
+                res.json({ success: true, data: transformed });
+            } else {
+                res.json({ success: true, data: null });
+            }
         }
     );
 });
