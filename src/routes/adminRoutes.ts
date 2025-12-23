@@ -7,6 +7,30 @@ const router = express.Router();
 
 router.use(checkAdminAuth); // Apply to all routes in this file
 
+// 0. Dashboard Stats
+router.get('/stats', async (req, res) => {
+    try {
+        const userCount = await db.get('SELECT COUNT(*) as c FROM users');
+        const foodCount = await db.get('SELECT COUNT(*) as c FROM foods WHERE isActive = 1');
+        const exerciseCount = await db.get('SELECT COUNT(*) as c FROM exercises WHERE isActive = 1');
+        const pendingFoods = await db.get('SELECT COUNT(*) as c FROM foods WHERE isActive = 0');
+        const pendingExercises = await db.get('SELECT COUNT(*) as c FROM exercises WHERE isActive = 0');
+
+        res.json({
+            success: true,
+            data: {
+                users: userCount?.c || 0,
+                foods: foodCount?.c || 0,
+                exercises: exerciseCount?.c || 0,
+                pending: (pendingFoods?.c || 0) + (pendingExercises?.c || 0)
+            }
+        });
+    } catch (error) {
+        console.error('Stats error:', error);
+        res.status(500).json({ error: 'DB Error' });
+    }
+});
+
 // 0. Announcements
 router.get('/announcements', async (req, res) => {
     try {

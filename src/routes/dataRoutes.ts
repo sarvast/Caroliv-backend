@@ -31,8 +31,8 @@ router.get('/foods/:id/pairings', async (req, res) => {
     try {
         const { id } = req.params;
 
-        // 1. Get the source food's tags
-        const sourceFood = await db.get('SELECT pairingTags FROM foods WHERE id = ?', [id]);
+        // 1. Get the source food's details
+        const sourceFood = await db.get('SELECT pairingTags, category FROM foods WHERE id = ?', [id]);
 
         if (!sourceFood || !sourceFood.pairingTags) {
             return res.json({ success: true, data: [] });
@@ -41,12 +41,45 @@ router.get('/foods/:id/pairings', async (req, res) => {
         const tags = sourceFood.pairingTags.split(',').map((t: string) => t.trim().toLowerCase()).filter(Boolean);
         if (tags.length === 0) return res.json({ success: true, data: [] });
 
+        const sourceCategory = sourceFood.category;
+
         // 2. Build query to find matching items
-        // Low memory approach: SQLite string matching
-        let query = 'SELECT * FROM foods WHERE isActive = 1 AND id != ? AND (';
+        let query = 'SELECT * FROM foods WHERE isActive = 1 AND id != ?';
         const params: any[] = [id];
 
+        // LOGIC IMPROVEMENT 1: Avoid same-category pairings (e.g. Roti + Rice, Apple + Banana is okay but generally main dishes don't mix)
+        // Exceptions can be handled via tags, but generally for "Meals" we want diversity.
+        if (sourceCategory === 'Grains' || sourceCategory === 'Protein') {
+            // Don't suggest other Grains with Grains (e.g. No Roti + Rice)
+            // Don't suggest Snacks with Grains (e.g. No Roti + Kachori)
+            query += ' AND category != ? AND category != "Snacks"';
+            params.push(sourceCategory);
+        } else if (sourceCategory === 'Beverages') {
+            // Beverages pair with Snacks
+            query += ' AND category = "Snacks"';
+        }
+
+        query += ' AND (';
+
         const conditions = tags.map((tag: string) => {
+            // LOGIC IMPROVEMENT 2: Direct Category Matching
+            // If tag is "dal", match category "Protein" or name "dal"
+            // If tag is "curry", match category "Vegetables" or name "curry"
+
+            if (['dal', 'protein', 'chicken', 'egg', 'paneer'].includes(tag)) {
+                params.push('Protein', `%${tag}%`, `%${tag}%`);
+                return '(category = ? OR lower(name) LIKE ? OR lower(searchTerms) LIKE ?)';
+            }
+            if (['sabzi', 'vegetable', 'curry', 'bhaji'].includes(tag)) {
+                params.push('Vegetables', `%${tag}%`, `%${tag}%`);
+                return '(category = ? OR lower(name) LIKE ? OR lower(searchTerms) LIKE ?)';
+            }
+            if (['rice', 'chawal', 'biryani'].includes(tag)) {
+                params.push('Grains', `%${tag}%`, `%${tag}%`);
+                return '(category = ? OR lower(name) LIKE ? OR lower(searchTerms) LIKE ?)';
+            }
+
+            // Fallback to text matching
             params.push(`%${tag}%`, `%${tag}%`);
             return '(lower(name) LIKE ? OR lower(searchTerms) LIKE ?)';
         });
