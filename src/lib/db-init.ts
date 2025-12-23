@@ -41,7 +41,17 @@ export const initDb = async () => {
             )
         `);
 
-        // 4. Run Migrations (Safe Column Additions)
+        // 4. User App Data Table (Tasks, Sleep, Preferences)
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS user_app_data (
+                user_id TEXT PRIMARY KEY,
+                data TEXT NOT NULL,
+                updatedAt TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        `);
+
+        // 5. Run Migrations (Safe Column Additions)
         await safeAddColumn('foods', 'pairingTags', 'TEXT DEFAULT ""');
         await safeAddColumn('users', 'workoutLevel', 'TEXT DEFAULT "beginner"');
         await safeAddColumn('users', 'workoutGoal', 'TEXT DEFAULT "weight_loss"');

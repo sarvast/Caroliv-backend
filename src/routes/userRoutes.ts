@@ -131,4 +131,25 @@ router.post('/sync-log', authenticateToken, async (req: AuthRequest, res) => {
     }
 });
 
+// Sync App Data (Tasks, Sleep Schedule, etc.)
+router.post('/sync-app-data', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+        const data = req.body;
+        if (!data) return res.status(400).json({ success: false, message: 'Invalid data' });
+
+        // Store in a generic app_data table or user preferences
+        await db.run(
+            `INSERT INTO user_app_data (user_id, data, updatedAt) 
+             VALUES (?, ?, ?)
+             ON CONFLICT(user_id) DO UPDATE SET data=excluded.data, updatedAt=excluded.updatedAt`,
+            [req.user.userId, JSON.stringify(data), new Date().toISOString()]
+        );
+
+        res.json({ success: true, message: 'App data synced' });
+    } catch (error) {
+        console.error('Sync app data error:', error);
+        res.status(500).json({ success: false, message: 'Sync failed' });
+    }
+});
+
 export default router;
