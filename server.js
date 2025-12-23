@@ -1,11 +1,13 @@
 const express = require('express');
-
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const compression = require('compression');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./src/config/swagger');
 require('dotenv').config();
 
 // Load local.settings.json if present (fallback for .env)
@@ -194,9 +196,51 @@ function initDatabase() {
 
 initDatabase();
 
-app.use(cors());
+
+// CORS Configuration
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production'
+        ? (process.env.CORS_ORIGIN || '').split(',').filter(Boolean)
+        : '*',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
+
+// Security headers
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    next();
+});
+
+// Compression middleware
+app.use(compression());
+
+// Performance monitoring
+app.use((req, res, next) => {
+    const startTime = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - startTime;
+        if (duration > 1000) {
+            console.log(`⚠️  Slow request: ${req.method} ${req.path} - ${duration}ms`);
+        }
+    });
+    next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Caloriv API Documentation'
+}));
 
 // ... (existing helper endpoints) ...
 
@@ -392,6 +436,13 @@ app.put('/api/admin/config', (req, res) => {
         );
     });
 });
+
+
+// TODO: Add rate limiting to auth endpoints
+// Example:
+// const { authLimiter } = require('./src/middleware/rateLimit');
+// app.post('/api/auth/login', authLimiter, loginHandler);
+// app.post('/api/auth/register', authLimiter, registerHandler);
 
 // ==================== AUTHENTICATION ====================
 
@@ -673,7 +724,7 @@ app.delete('/api/users/measurements/:id', async (req, res) => {
 // ==================== ADMIN - USERS ====================
 
 app.get('/api/admin/users', (req, res) => {
-    db.all('SELECT id, email, password, name, age, gender, height, currentWeight, targetWeight, goal, chest, waist, arms, hips, createdAt, updatedAt FROM users', [], (err, users) => {
+    db.all('SELECT id, email, name, age, gender, height, currentWeight, targetWeight, goal, chest, waist, arms, hips, createdAt, updatedAt FROM users', [], (err, users) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
@@ -682,7 +733,7 @@ app.get('/api/admin/users', (req, res) => {
 });
 
 app.get('/api/admin/users/:id', (req, res) => {
-    db.get('SELECT id, email, password, name, age, gender, height, currentWeight, targetWeight, goal, chest, waist, arms, hips, createdAt, updatedAt FROM users WHERE id = ?', [req.params.id], (err, user) => {
+    db.get('SELECT id, email, name, age, gender, height, currentWeight, targetWeight, goal, chest, waist, arms, hips, createdAt, updatedAt FROM users WHERE id = ?', [req.params.id], (err, user) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
