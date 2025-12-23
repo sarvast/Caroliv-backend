@@ -192,6 +192,31 @@ function initDatabase() {
           createdAt TEXT
         )`);
     });
+
+    // Promotions Table
+    db.serialize(() => {
+        db.run(`CREATE TABLE IF NOT EXISTS promotions (
+          id TEXT PRIMARY KEY,
+          title TEXT,
+          description TEXT,
+          imageUrl TEXT,
+          link TEXT,
+          isActive INTEGER DEFAULT 1,
+          createdAt TEXT
+        )`);
+    });
+
+    // Announcements Table
+    db.serialize(() => {
+        db.run(`CREATE TABLE IF NOT EXISTS announcements (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          type TEXT DEFAULT 'info',
+          isActive INTEGER DEFAULT 1,
+          createdAt TEXT
+        )`);
+    });
 }
 
 initDatabase();
