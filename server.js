@@ -242,6 +242,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customSiteTitle: 'Caloriv API Documentation'
 }));
 
+// Load admin routes
+const adminRoutes = require('./admin-routes');
+adminRoutes(app, db);
+
 // ... (existing helper endpoints) ...
 
 // ==================== EXERCISE SUBMISSIONS ====================
