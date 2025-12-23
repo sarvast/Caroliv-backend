@@ -31,6 +31,40 @@ router.get('/stats', async (req, res) => {
     }
 });
 
+// 0.1 Growth Stats (Last 30 Days)
+router.get('/stats/growth', async (req, res) => {
+    try {
+        // Users Growth
+        const usersGrowth = await db.all(`
+            SELECT strftime('%Y-%m-%d', createdAt) as date, COUNT(*) as count 
+            FROM users 
+            WHERE createdAt >= date('now', '-30 days')
+            GROUP BY date 
+            ORDER BY date ASC
+        `);
+
+        // Food Submissions (Activity Proxy)
+        const foodsGrowth = await db.all(`
+            SELECT strftime('%Y-%m-%d', createdAt) as date, COUNT(*) as count 
+            FROM foods 
+            WHERE createdAt >= date('now', '-30 days')
+            GROUP BY date 
+            ORDER BY date ASC
+        `);
+
+        res.json({
+            success: true,
+            data: {
+                users: usersGrowth,
+                foods: foodsGrowth
+            }
+        });
+    } catch (error) {
+        console.error('Growth stats error:', error);
+        res.status(500).json({ error: 'DB Error' });
+    }
+});
+
 // 0. Announcements
 router.get('/announcements', async (req, res) => {
     try {
@@ -237,6 +271,45 @@ router.post('/foods', async (req, res) => {
         );
         res.json({ success: true, data: { id, ...req.body } });
     } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+router.post('/foods/bulk', async (req, res) => {
+    try {
+        const foods = req.body; // Expecting Array
+        if (!Array.isArray(foods)) return res.status(400).json({ error: 'Expected JSON Array' });
+
+        let count = 0;
+        const now = new Date().toISOString();
+
+        // Transaction-like loop (SQLite runs sequentially anyway in this setup)
+        for (const food of foods) {
+            if (!food.name || !food.calories) continue; // Skip invalid
+
+            const id = `food_bulk_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+            await db.run(
+                'INSERT INTO foods (id, name, calories, protein, carbs, fat, emoji, pairingTags, category, servingSize, isActive, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)',
+                [
+                    id,
+                    food.name,
+                    food.calories || 0,
+                    food.protein || 0,
+                    food.carbs || 0,
+                    food.fat || 0,
+                    food.emoji || '🍽️',
+                    food.pairingTags || '',
+                    food.category || 'Other',
+                    food.servingSize || '1 serving',
+                    now
+                ]
+            );
+            count++;
+        }
+
+        res.json({ success: true, message: `Successfully imported ${count} items` });
+    } catch (error) {
+        console.error('Bulk upload error:', error);
+        res.status(500).json({ error: 'DB Error during bulk upload' });
+    }
 });
 
 router.put('/foods/:id', async (req, res) => {

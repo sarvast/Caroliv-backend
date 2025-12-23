@@ -111,4 +111,24 @@ router.post('/measurements', authenticateToken, async (req: AuthRequest, res) =>
     }
 });
 
+// Sync Daily Log (Smart Sync)
+router.post('/sync-log', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+        const log = req.body;
+        if (!log || !log.date) return res.status(400).json({ success: false, message: 'Invalid log data' });
+
+        await db.run(
+            `INSERT INTO daily_logs (user_id, date, data, updatedAt) 
+             VALUES (?, ?, ?, ?)
+             ON CONFLICT(user_id, date) DO UPDATE SET data=excluded.data, updatedAt=excluded.updatedAt`,
+            [req.user.userId, log.date, JSON.stringify(log), new Date().toISOString()]
+        );
+
+        res.json({ success: true, message: 'Synced' });
+    } catch (error) {
+        console.error('Sync log error:', error);
+        res.status(500).json({ success: false, message: 'Sync failed' });
+    }
+});
+
 export default router;
