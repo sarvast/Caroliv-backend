@@ -393,6 +393,30 @@ app.get('/api/config/app-version', (req, res) => {
     });
 });
 
+// Public endpoint for mobile app - Get active promotion
+app.get('/api/features/promotion', (req, res) => {
+    db.get(
+        'SELECT * FROM promotions WHERE isActive = 1 ORDER BY createdAt DESC LIMIT 1',
+        [],
+        (err, promotion) => {
+            if (err) return res.status(500).json({ success: false, error: err.message });
+            res.json({ success: true, data: promotion || null });
+        }
+    );
+});
+
+// Public endpoint for mobile app - Get active announcements
+app.get('/api/features/announcements', (req, res) => {
+    db.all(
+        'SELECT * FROM announcements WHERE isActive = 1 ORDER BY createdAt DESC',
+        [],
+        (err, announcements) => {
+            if (err) return res.status(500).json({ success: false, error: err.message });
+            res.json({ success: true, data: announcements || [] });
+        }
+    );
+});
+
 // Get app config (ADMIN)
 app.get('/api/admin/config', (req, res) => {
     db.all('SELECT key, value FROM app_config', [], (err, rows) => {
