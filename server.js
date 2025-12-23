@@ -201,7 +201,7 @@ initDatabase();
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production'
         ? (process.env.CORS_ORIGIN || '').split(',').filter(Boolean)
-        : '*',
+        : ['http://localhost:3001', 'http://localhost:3000', '*'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
