@@ -4,14 +4,15 @@ import jwt from 'jsonwebtoken';
 import { db } from '../lib/db';
 import { sendOtpEmail } from '../services/emailService';
 import crypto from 'crypto';
+import { authLimiter, strictAuthLimiter, registrationLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'default_insecure_secret';
 
 // ============ AUTH ENDPOINTS ============
 
-// Register
-router.post('/register', async (req, res) => {
+// Register (Rate Limited: 3 per hour per IP)
+router.post('/register', registrationLimiter, async (req, res) => {
     try {
         const { email, password, name, age, gender, weight, height, targetWeight, goal, activityLevel } = req.body;
 
@@ -76,8 +77,8 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// Login
-router.post('/login', async (req, res) => {
+// Login (Rate Limited: 5 attempts per 15 min per IP)
+router.post('/login', authLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -163,8 +164,8 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Forgot Password - Step 1: Request OTP
-router.post('/forgot-password', async (req, res) => {
+// Forgot Password - Step 1: Request OTP (Rate Limited: 3 per hour per IP)
+router.post('/forgot-password', strictAuthLimiter, async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) return res.status(400).json({ success: false, message: 'Email required' });
@@ -196,8 +197,8 @@ router.post('/forgot-password', async (req, res) => {
     }
 });
 
-// Forgot Password - Step 2: Confirm Reset
-router.post('/confirm-reset-password', async (req, res) => {
+// Forgot Password - Step 2: Confirm Reset (Rate Limited: 3 per hour per IP)
+router.post('/confirm-reset-password', strictAuthLimiter, async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
         if (!email || !otp || !newPassword) return res.status(400).json({ success: false, message: 'Missing fields' });
