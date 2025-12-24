@@ -429,6 +429,47 @@ app.get('/api/features/announcements', (req, res) => {
     );
 });
 
+// Public endpoint for mobile app - Get app version config
+app.get('/api/features/config', (req, res) => {
+    db.all('SELECT key, value FROM app_config', [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ success: false, error: err.message });
+        }
+
+        const config = {
+            requiredVersion: '1.0.0',
+            forceUpdate: false,
+            updateMessage: 'A new version of Caloriv is available!',
+            updateUrl: 'https://caloriv-web.vercel.app/'
+        };
+
+        if (rows) {
+            rows.forEach(row => {
+                // Convert string booleans to actual booleans
+                config[row.key] = row.value === 'true' ? true : row.value === 'false' ? false : row.value;
+            });
+        }
+
+        res.json({ success: true, data: config });
+    });
+});
+
+// Sync user activity log (authenticated endpoint)
+app.post('/api/users/sync-log', authenticateToken, (req, res) => {
+    const userId = req.user.userId;
+    const syncData = req.body;
+
+    // For now, just acknowledge the sync
+    // In future, you can store this data in a sync_logs table if needed
+    console.log(`Sync received from user ${userId}:`, JSON.stringify(syncData).substring(0, 100));
+
+    res.json({
+        success: true,
+        message: 'Data synced successfully',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Get app config (ADMIN)
 app.get('/api/admin/config', (req, res) => {
     db.all('SELECT key, value FROM app_config', [], (err, rows) => {
