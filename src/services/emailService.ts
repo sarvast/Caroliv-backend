@@ -17,13 +17,14 @@ class EmailService {
     }
 
     async sendWelcomeEmail(to: string, name: string): Promise<boolean> {
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        const user = process.env.SMTP_USER || process.env.GMAIL_USER;
+        const pass = process.env.SMTP_PASS || process.env.GMAIL_PASS;
+
+        if (!user || !pass) {
             logger.warn('SMTP credentials not found. Skipping welcome email.');
             return false;
         }
-        // ... (existing code omitted for brevity in replace, but full function logic remains)
-        // RE-INSERTING EXACT Logic or just appending the new function below
-        // Since I can't partially edit well without full context of block, I will append the methods.
+
         const subject = 'Welcome to Caloriv! 🚀';
         const html = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
@@ -46,7 +47,7 @@ class EmailService {
 
         try {
             await this.transporter.sendMail({
-                from: '"Caloriv Team" <' + process.env.SMTP_USER + '>',
+                from: '"Caloriv Team" <' + user + '>',
                 to,
                 subject,
                 html,

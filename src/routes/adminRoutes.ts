@@ -238,6 +238,17 @@ router.put('/users/:id/engagement', async (req, res) => {
     }
 });
 
+router.delete('/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.run('DELETE FROM users WHERE id = ?', [id]);
+        res.json({ success: true, message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({ success: false, message: 'Failed to delete user' });
+    }
+});
+
 // 3. Approvals (Foods)
 router.get('/food-submissions', async (req, res) => {
     try {
