@@ -39,7 +39,7 @@ class EmailService {
                 </ul>
                 <p>If you have any questions or feedback, feel free to reply to this email.</p>
                 <p style="text-align: center; margin-top: 30px;">
-                    <a href="https://caloriv.fit" style="background-color: #a855f7; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Get Started</a>
+                    <a href="https://caloriv.vercel.app/" style="background-color: #a855f7; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Get Started</a>
                 </p>
                 <p style="margin-top: 40px; font-size: 12px; color: #888; text-align: center;">© ${new Date().getFullYear()} Caloriv. All rights reserved.</p>
             </div>
