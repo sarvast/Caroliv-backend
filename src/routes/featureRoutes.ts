@@ -53,9 +53,27 @@ router.get('/activity-stats', async (req, res) => {
 
 router.get('/config', async (req, res) => {
     try {
-        const config = await db.get('SELECT * FROM app_config ORDER BY id DESC LIMIT 1');
-        res.json({ success: true, data: config });
+        const rows = await db.all('SELECT key, value FROM app_config');
+        const config: any = {};
+
+        if (Array.isArray(rows)) {
+            rows.forEach((row: any) => {
+                if (row.value === 'true') config[row.key] = true;
+                else if (row.value === 'false') config[row.key] = false;
+                else config[row.key] = row.value;
+            });
+        }
+
+        const defaults: any = {
+            requiredVersion: '1.0.0',
+            forceUpdate: false,
+            updateMessage: 'Please update app',
+            updateUrl: 'https://caloriv-web.vercel.app/'
+        };
+
+        res.json({ success: true, data: { ...defaults, ...config } });
     } catch (error) {
+        console.error('Config fetch error:', error);
         res.status(500).json({ success: false, error: 'DB Error' });
     }
 });

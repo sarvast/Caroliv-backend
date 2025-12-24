@@ -295,6 +295,56 @@ router.delete('/exercise-submissions/:id', async (req, res) => {
 });
 
 // CRUD (Foods & Exercises) - Handled here for admin simplicity
+router.get('/foods', async (req, res) => {
+    try {
+        const search = req.query.search as string;
+        const category = req.query.category as string;
+        let query = 'SELECT * FROM foods WHERE 1=1';
+        const params: any[] = [];
+
+        if (search) {
+            query += ' AND (lower(name) LIKE ? OR lower(nameHindi) LIKE ?)';
+            const term = `%${search.toLowerCase()}%`;
+            params.push(term, term);
+        }
+        if (category) {
+            query += ' AND category = ?';
+            params.push(category);
+        }
+
+        query += ' ORDER BY createdAt DESC';
+        const foods = await db.query(query, params);
+        res.json({ success: true, data: foods });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
+router.get('/exercises', async (req, res) => {
+    try {
+        const search = req.query.search as string;
+        const category = req.query.category as string;
+        const difficulty = req.query.difficulty as string;
+        let query = 'SELECT * FROM exercises WHERE 1=1';
+        const params: any[] = [];
+
+        if (search) {
+            query += ' AND lower(name) LIKE ?';
+            params.push(`%${search.toLowerCase()}%`);
+        }
+        if (category) {
+            query += ' AND category = ?';
+            params.push(category);
+        }
+        if (difficulty) {
+            query += ' AND difficulty = ?';
+            params.push(difficulty);
+        }
+
+        query += ' ORDER BY createdAt DESC';
+        const exercises = await db.query(query, params);
+        res.json({ success: true, data: exercises });
+    } catch (error) { res.status(500).json({ error: 'DB Error' }) }
+});
+
 router.post('/foods', async (req, res) => {
     try {
         const id = `food_${Date.now()}`;
