@@ -1,4 +1,9 @@
-import express from 'express';
+const fs = require('fs');
+const path = require('path');
+
+const filePath = path.join(__dirname, 'src', 'routes', 'adminRoutes.ts');
+
+const fileContent = `import express from 'express';
 import { db } from '../lib/db';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import bcrypt from 'bcryptjs';
@@ -20,9 +25,9 @@ router.post('/login', async (req, res) => {
         if (!isValid) return res.status(401).json({ success: false, error: 'Invalid credentials' });
 
         // Admin Check
-        const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map((e: string) => e.trim());
+        const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim());
         const isAdmin = adminEmails.length === 0 || adminEmails.includes(normalizedEmail);
-
+        
         if (!isAdmin) return res.status(403).json({ success: false, error: 'Admin access required' });
 
         const token = jwt.sign(
@@ -69,22 +74,22 @@ router.get('/stats', async (req, res) => {
 router.get('/stats/growth', async (req, res) => {
     try {
         // Users Growth
-        const usersGrowth = await db.all(`
+        const usersGrowth = await db.all(\`
             SELECT strftime('%Y-%m-%d', createdAt) as date, COUNT(*) as count 
             FROM users 
             WHERE createdAt >= date('now', '-30 days')
             GROUP BY date 
             ORDER BY date ASC
-        `);
+        \`);
 
         // Food Submissions (Activity Proxy)
-        const foodsGrowth = await db.all(`
+        const foodsGrowth = await db.all(\`
             SELECT strftime('%Y-%m-%d', createdAt) as date, COUNT(*) as count 
             FROM foods 
             WHERE createdAt >= date('now', '-30 days')
             GROUP BY date 
             ORDER BY date ASC
-        `);
+        \`);
 
         res.json({
             success: true,
@@ -110,7 +115,7 @@ router.get('/announcements', async (req, res) => {
 router.post('/announcements', async (req, res) => {
     try {
         const { title, message, type, expiresAt } = req.body;
-        const id = `ann_${Date.now()}`;
+        const id = \`ann_\${Date.now()}\`;
         await db.run(
             'INSERT INTO announcements (id, title, message, type, expiresAt, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
             [id, title, message, type || 'info', expiresAt || null, new Date().toISOString()]
@@ -157,9 +162,9 @@ router.put('/config', async (req, res) => {
         const now = new Date().toISOString();
 
         await db.run(
-            `INSERT INTO app_config (key, value, updatedAt) VALUES 
+            \`INSERT INTO app_config (key, value, updatedAt) VALUES 
             ('requiredVersion', ?, ?), ('forceUpdate', ?, ?), ('updateMessage', ?, ?), ('updateUrl', ?, ?)
-            ON CONFLICT(key) DO UPDATE SET value=excluded.value, updatedAt=excluded.updatedAt`,
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value, updatedAt=excluded.updatedAt\`,
             [
                 requiredVersion, now,
                 String(forceUpdate), now,
@@ -183,7 +188,7 @@ router.get('/users', async (req, res) => {
 
         if (search) {
             query += ' WHERE lower(name) LIKE ? OR lower(email) LIKE ?';
-            const term = `%${search.toLowerCase()}%`;
+            const term = \`%\${search.toLowerCase()}%\`;
             params.push(term, term);
         }
 
@@ -297,7 +302,7 @@ router.delete('/exercise-submissions/:id', async (req, res) => {
 // CRUD (Foods & Exercises) - Handled here for admin simplicity
 router.post('/foods', async (req, res) => {
     try {
-        const id = `food_${Date.now()}`;
+        const id = \`food_\${Date.now()}\`;
         const { name, calories, protein, carbs, fat, emoji, pairingTags } = req.body;
         await db.run(
             'INSERT INTO foods (id, name, calories, protein, carbs, fat, emoji, pairingTags, isActive, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)',
@@ -319,7 +324,7 @@ router.post('/foods/bulk', async (req, res) => {
         for (const food of foods) {
             if (!food.name || !food.calories) continue; // Skip invalid
 
-            const id = `food_bulk_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+            const id = \`food_bulk_\${Date.now()}_\${Math.random().toString(36).substr(2, 5)}\`;
             await db.run(
                 'INSERT INTO foods (id, name, calories, protein, carbs, fat, emoji, pairingTags, category, servingSize, isActive, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)',
                 [
@@ -339,7 +344,7 @@ router.post('/foods/bulk', async (req, res) => {
             count++;
         }
 
-        res.json({ success: true, message: `Successfully imported ${count} items` });
+        res.json({ success: true, message: \`Successfully imported \${count} items\` });
     } catch (error) {
         console.error('Bulk upload error:', error);
         res.status(500).json({ error: 'DB Error during bulk upload' });
@@ -351,10 +356,10 @@ router.put('/foods/:id', async (req, res) => {
         const { id } = req.params;
         const { name, nameHindi, calories, protein, carbs, fat, emoji, pairingTags, isActive } = req.body;
         await db.run(
-            `UPDATE foods SET 
+            \`UPDATE foods SET 
                 name = ?, nameHindi = ?, calories = ?, protein = ?, carbs = ?, 
                 fat = ?, emoji = ?, pairingTags = ?, isActive = ?
-             WHERE id = ?`,
+             WHERE id = ?\`,
             [name, nameHindi, calories, protein, carbs, fat, emoji, pairingTags, isActive, id]
         );
         res.json({ success: true, message: 'Updated' });
@@ -378,7 +383,7 @@ router.get('/promotions', async (req, res) => {
 
 router.post('/promotions', async (req, res) => {
     try {
-        const id = `promo_${Date.now()}`;
+        const id = \`promo_\${Date.now()}\`;
         const { title, imageUrl, externalLink, delayDays, isActive } = req.body;
         await db.run(
             'INSERT INTO promotions (id, title, imageUrl, externalLink, delayDays, isActive, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -408,3 +413,7 @@ router.delete('/promotions/:id', async (req, res) => {
 });
 
 export default router;
+`;
+
+fs.writeFileSync(filePath, fileContent);
+console.log('✅ adminRoutes.ts restored successfully!');
