@@ -70,7 +70,7 @@ const foods = [
     { id: '7', name: '1 Potato Paratha', nameHindi: '1 आलू पराठा', calories: 230, protein: 5, carbs: 35, fat: 8, emoji: '🥔', category: 'breakfast', searchTerms: 'paratha aloo stuffed flatbread punjabi breakfast potato' },
     { id: '8', name: '1 Plain Paratha', nameHindi: '1 प्लेन पराठा', calories: 190, protein: 4, carbs: 28, fat: 6, emoji: '🫓', category: 'breakfast', searchTerms: 'paratha plain tawa sada flatbread indian bread' },
     { id: '9', name: '1 Paneer Paratha', nameHindi: '1 पनीर पराठा', calories: 260, protein: 9, carbs: 32, fat: 12, emoji: '🧀', category: 'breakfast', searchTerms: 'paratha paneer cottage cheese stuffed healthy protein breakfast' },
-    { id: '10', name: '2 Idli with Sambar', nameHindi: '2 इडली सांबर के साथ', calories: 120, protein: 4, carbs: 24, fat: 1, emoji: '🥘', category: 'breakfast', searchTerms: 'idli sambar breakfast south indian steamed rice cake healthy' },
+    { id: '10', name: '1 Idli', nameHindi: '1 इडली', calories: 60, protein: 2, carbs: 12, fat: 0.5, emoji: '🥘', category: 'breakfast', searchTerms: 'idli sambar breakfast south indian steamed rice cake healthy' },
     { id: '11', name: '1 Plain Dosa', nameHindi: '1 प्लेन डोसा', calories: 110, protein: 3, carbs: 22, fat: 2, emoji: '🥞', category: 'breakfast', searchTerms: 'dosa plain sada South indian crepe rice batter' },
     { id: '12', name: '1 Masala Dosa', nameHindi: '1 मसाला डोसा', calories: 200, protein: 4, carbs: 30, fat: 7, emoji: '🥞', category: 'breakfast', searchTerms: 'dosa masala potato South indian stuffed spicy mysore' },
     { id: '13', name: '1 Bowl Poha', nameHindi: '1 कटोरी पोहा', calories: 180, protein: 3, carbs: 30, fat: 5, emoji: '🍚', category: 'breakfast', searchTerms: 'poha flattened rice chivda breakfast kanda batata indori' },
@@ -103,8 +103,7 @@ const foods = [
     { id: '40', name: '1 Orange', nameHindi: '1 संतरा', calories: 47, protein: 1, carbs: 12, fat: 0, emoji: '🍊', category: 'snacks', searchTerms: 'orange santra fruit vitamin c citrus juicy' },
     { id: '41', name: '1 Mango', nameHindi: '1 आम', calories: 135, protein: 1, carbs: 35, fat: 0, emoji: '🥭', category: 'snacks', searchTerms: 'mango aam fruit king summer sweet' },
     { id: '42', name: '1 Cup Papaya', nameHindi: '1 कप पपीता', calories: 55, protein: 1, carbs: 13, fat: 0, emoji: '🍈', category: 'breakfast', searchTerms: 'papaya papita fruit digestion healthy low calorie' },
-    { id: '43', name: '200ml Tea (Sweet)', nameHindi: '200ml चाय (मीठी)', calories: 100, protein: 2, carbs: 15, fat: 3, emoji: '☕', category: 'breakfast', searchTerms: 'tea chai morning sweet milk masala ginger' },
-    { id: '44', name: '200ml Tea (No Sugar)', nameHindi: '200ml चाय (बिना चीनी)', calories: 60, protein: 2, carbs: 6, fat: 3, emoji: '☕', category: 'breakfast', searchTerms: 'tea chai unsweetened sugarfree healthy milk' },
+    { id: '44', name: '1 Cup Tea', nameHindi: '1 कप चाय', calories: 60, protein: 2, carbs: 6, fat: 3, emoji: '☕', category: 'breakfast', searchTerms: 'tea chai no sugar unsweetened sugarfree healthy milk' },
     { id: '45', name: '100ml Milk Coffee', nameHindi: '100ml मिल्क कॉफी', calories: 80, protein: 3, carbs: 10, fat: 4, emoji: '☕', category: 'breakfast', searchTerms: 'coffee kafi milk nescafe latte cappuccino' },
     { id: '46', name: '200ml Milk', nameHindi: '200ml दूध', calories: 120, protein: 6, carbs: 10, fat: 6, emoji: '🥛', category: 'breakfast', searchTerms: 'milk doodh dairy calcium protein warm cold' },
     { id: '47', name: '1 Glass Lassi', nameHindi: '1 गिलास लस्सी', calories: 180, protein: 6, carbs: 30, fat: 5, emoji: '🥤', category: 'snacks', searchTerms: 'lassi sweet yogurt drink punjabi summer cool' },
@@ -118,12 +117,12 @@ const foods = [
     { id: '55', name: '1 Plate Sev Puri', nameHindi: '1 प्लेट सेव पूरी', calories: 280, protein: 5, carbs: 38, fat: 12, emoji: '🍘', category: 'snacks', searchTerms: 'sev puri chaat snack papdi spicy mumbai' },
     { id: '56', name: '2 Aloo Tikki', nameHindi: '2 आलू टिक्की', calories: 280, protein: 4, carbs: 35, fat: 14, emoji: '🥔', category: 'snacks', searchTerms: 'aloo tikki cutlet patty potato snack spicy fried chaat' },
     { id: '57', name: '1 Khasta Kachori', nameHindi: '1 खस्ता कचौड़ी', calories: 185, protein: 3, carbs: 20, fat: 10, emoji: '🥟', category: 'snacks', searchTerms: 'khasta kachori snack fried moong dal rajasthani pyaz breakfast' },
-    { id: '58', name: '1 Plate Veg Momos (6 pcs)', nameHindi: '1 प्लेट वेज मोमोस', calories: 210, protein: 5, carbs: 35, fat: 4, emoji: '🥟', category: 'snacks', searchTerms: 'momos dimsum dumpling tibetan nepali steam veg fried chutney' },
+    { id: '58', name: '1 Veg Momo', nameHindi: '1 वेज मोमो', calories: 35, protein: 0.8, carbs: 6, fat: 0.6, emoji: '🥟', category: 'snacks', searchTerms: 'momos dimsum dumpling tibetan nepali steam veg fried chutney' },
     { id: '59', name: '1 Dabeli', nameHindi: '1 दाबेली', calories: 300, protein: 6, carbs: 45, fat: 12, emoji: '🥯', category: 'snacks', searchTerms: 'dabeli kutchi burger gujarati snack potato spicy bun' },
     { id: '60', name: '1 Egg Roll', nameHindi: '1 अंडा रोल', calories: 450, protein: 14, carbs: 40, fat: 22, emoji: '🌯', category: 'snacks', searchTerms: 'egg roll wrap frankie kolkata street food nonveg anda' },
     { id: '61', name: '1 Plate Pav Bhaji', nameHindi: '1 प्लेट पाव भाजी', calories: 400, protein: 8, carbs: 60, fat: 15, emoji: '🍛', category: 'dinner', searchTerms: 'pav bhaji mumbai street food dinner lunch spicy buttery bread vegetable' },
-    { id: '62', name: '6 Pani Puri', nameHindi: '6 पानी पूरी', calories: 120, protein: 2, carbs: 22, fat: 4, emoji: '🥟', category: 'snacks', searchTerms: 'pani puri golgappa puchka gupchup water balls spicy tangy chaat' },
-    { id: '63', name: '1 Plate Dhokla (4 pcs)', nameHindi: '1 प्लेट ढोकला', calories: 160, protein: 6, carbs: 25, fat: 5, emoji: '🟨', category: 'breakfast', searchTerms: 'dhokla khaman gujarati snack steamed besan healthy breakfast lighter' },
+    { id: '62', name: '1 Pani Puri', nameHindi: '1 पानी पूरी', calories: 20, protein: 0.3, carbs: 4, fat: 0.6, emoji: '🥟', category: 'snacks', searchTerms: 'pani puri golgappa puchka gupchup water balls spicy tangy chaat' },
+    { id: '63', name: '1 Dhokla', nameHindi: '1 ढोकला', calories: 40, protein: 1.5, carbs: 6, fat: 1, emoji: '🟨', category: 'breakfast', searchTerms: 'dhokla khaman gujarati snack steamed besan healthy breakfast lighter' },
     { id: '64', name: '1 Plate Misal Pav', nameHindi: '1 प्लेट मिसल पाव', calories: 480, protein: 15, carbs: 55, fat: 20, emoji: '🍛', category: 'breakfast', searchTerms: 'misal pav spicy maharashtrian sprouts curry bread breakfast fwa' },
     { id: '65', name: '2 Thepla', nameHindi: '2 थेपला', calories: 240, protein: 6, carbs: 35, fat: 10, emoji: '🥞', category: 'breakfast', searchTerms: 'thepla paratha gujarati methi fenugreek travel food healthy roti' },
     { id: '66', name: '1 Plate Chole Bhature', nameHindi: '1 प्लेट छोले भटूरे', calories: 550, protein: 18, carbs: 70, fat: 25, emoji: '🥘', category: 'lunch', searchTerms: 'chole bhature punjabi heavy breakfast lunch chickpea fried bread chana' },
@@ -168,8 +167,8 @@ const foods = [
     { id: '105', name: '1 Glass Sugarcane Juice', nameHindi: '1 गिलास गन्ने का रस', calories: 180, protein: 0, carbs: 45, fat: 0, emoji: '🎋', category: 'snacks', searchTerms: 'sugarcane ganne ka ras juice summer energy drink sweet fresh' },
     { id: '106', name: '1 Bowl Raita', nameHindi: '1 कटोरी रायता', calories: 80, protein: 3, carbs: 10, fat: 2, emoji: '🥣', category: 'lunch', searchTerms: 'raita yogurt curd side dish cucumber boondi cool digestion' },
     { id: '107', name: '1 Rumali Roti', nameHindi: '1 रुमाली रोटी', calories: 200, protein: 5, carbs: 35, fat: 4, emoji: '🫓', category: 'dinner', searchTerms: 'rumali roti thin bread soft handkerchief exotic dinner' },
-    { id: '108', name: '1 Plate Chicken Tikka (6 pcs)', nameHindi: '1 प्लेट चिकन टिक्का', calories: 300, protein: 35, carbs: 5, fat: 12, emoji: '🍢', category: 'dinner', searchTerms: 'chicken tikka kebab starter tandoori protein grilled nonveg' },
-    { id: '109', name: '1 Plate Paneer Tikka (6 pcs)', nameHindi: '1 प्लेट पनीर टिक्का', calories: 320, protein: 18, carbs: 15, fat: 20, emoji: '🍢', category: 'dinner', searchTerms: 'paneer tikka kebab starter veg tandoori cottage cheese protein' },
+    { id: '108', name: '1 Chicken Tikka', nameHindi: '1 चिकन टिक्का', calories: 50, protein: 6, carbs: 1, fat: 2, emoji: '🍢', category: 'dinner', searchTerms: 'chicken tikka kebab starter tandoori protein grilled nonveg' },
+    { id: '109', name: '1 Paneer Tikka', nameHindi: '1 पनीर टिक्का', calories: 53, protein: 3, carbs: 2, fat: 3, emoji: '🍢', category: 'dinner', searchTerms: 'paneer tikka kebab starter veg tandoori cottage cheese protein' },
     { id: '110', name: '1 Bowl Oats Porridge', nameHindi: '1 कटोरी ओट्स', calories: 150, protein: 6, carbs: 25, fat: 3, emoji: '🥣', category: 'breakfast', searchTerms: 'oats porridge breakfast healthy fiber diet oatmeal weight loss' },
     // Condiments & Sides (Crucial for Smart Pairing)
     { id: '111', name: '1 Spoon Pickle (Achar)', nameHindi: '1 चम्मच अचार', calories: 25, protein: 0, carbs: 2, fat: 2, emoji: '🏺', category: 'lunch', searchTerms: 'pickle achar spicy mango lime chili side' },
@@ -324,11 +323,7 @@ function migrate() {
             const n = food.name.toLowerCase();
             const t = (food.searchTerms || '').toLowerCase();
 
-            if (n.includes('tea') || n.includes('chai') || n.includes('coffee')) {
-                // If it's explicitly "No Sugar", suggest Sugar. If it's already "Sweet", don't.
-                if (n.includes('no sugar') || n.includes('unsweetened')) tags = 'sugar,biscuit,rusk,cookie,bun';
-                else tags = 'biscuit,rusk,cookie,bun'; // Already sweet, just snacks
-            }
+            if (n.includes('tea') || n.includes('chai') || n.includes('coffee')) tags = 'sugar,biscuit,rusk,cookie,bun';
             else if (n.includes('samosa') || n.includes('pakora') || n.includes('kachori') || n.includes('tikki') || n.includes('vada')) tags = 'green chutney,ketchup,tea,chutney';
             else if (n.includes('paratha') || n.includes('thepla') || n.includes('kulcha')) tags = 'yogurt,pickle,butter,curd';
             else if (n.includes('roti') || n.includes('chapati') || n.includes('naan')) tags = 'dal,curry,paneer,chicken,onion salad';
