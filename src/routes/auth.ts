@@ -6,9 +6,9 @@ import { Router } from 'express';
 import { AuthController } from '../controllers/authController';
 import { validate, registerSchema, loginSchema, resetPasswordSchema } from '../middleware/validation';
 import { authLimiter } from '../middleware/rateLimit';
-import { Database } from 'sqlite3';
+// import { Database } from 'sqlite3';
 
-export function createAuthRoutes(db: Database): Router {
+export function createAuthRoutes(db: any): Router {
     const router = Router();
     const authController = new AuthController(db);
 

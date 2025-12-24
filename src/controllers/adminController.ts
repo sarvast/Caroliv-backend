@@ -3,14 +3,19 @@
  * Handles admin-specific operations
  */
 
-import { Response } from 'express';
-import { Database } from 'sqlite3';
+import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+// import { Database } from 'sqlite3';
 import { AuthRequest } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { getPerformanceStats } from '../middleware/performance';
+import { emailService } from '../services/emailService';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'caroliv-secret-key-2025';
 
 export class AdminController {
-    constructor(private db: Database) { }
+    constructor(private db: any) { }
 
     /**
      * Get all users (admin only)
@@ -19,7 +24,7 @@ export class AdminController {
         this.db.all(
             'SELECT id, email, name, age, gender, height, currentWeight, targetWeight, goal, createdAt, updatedAt FROM users',
             [],
-            (err, users) => {
+            (err: Error | null, users: any[]) => {
                 if (err) {
                     logger.error('Error fetching users', err);
                     res.status(500).json({ success: false, error: err.message });
@@ -40,7 +45,7 @@ export class AdminController {
         this.db.get(
             'SELECT id, email, name, age, gender, height, currentWeight, targetWeight, goal, createdAt, updatedAt FROM users WHERE id = ?',
             [userId],
-            (err, user) => {
+            (err: Error | null, user: any) => {
                 if (err) {
                     logger.error('Error fetching user', err);
                     res.status(500).json({ success: false, error: err.message });
@@ -65,27 +70,27 @@ export class AdminController {
 
         this.db.serialize(() => {
             // Total users
-            this.db.get('SELECT COUNT(*) as count FROM users', [], (err, result: any) => {
+            this.db.get('SELECT COUNT(*) as count FROM users', [], (err: Error | null, result: any) => {
                 if (!err) stats.totalUsers = result.count;
             });
 
             // Total foods
-            this.db.get('SELECT COUNT(*) as count FROM foods WHERE isActive = 1', [], (err, result: any) => {
+            this.db.get('SELECT COUNT(*) as count FROM foods WHERE isActive = 1', [], (err: Error | null, result: any) => {
                 if (!err) stats.totalFoods = result.count;
             });
 
             // Total exercises
-            this.db.get('SELECT COUNT(*) as count FROM exercises WHERE isActive = 1', [], (err, result: any) => {
+            this.db.get('SELECT COUNT(*) as count FROM exercises WHERE isActive = 1', [], (err: Error | null, result: any) => {
                 if (!err) stats.totalExercises = result.count;
             });
 
             // Pending food submissions
-            this.db.get('SELECT COUNT(*) as count FROM food_submissions WHERE status = "pending"', [], (err, result: any) => {
+            this.db.get('SELECT COUNT(*) as count FROM food_submissions WHERE status = "pending"', [], (err: Error | null, result: any) => {
                 if (!err) stats.pendingFoodSubmissions = result.count;
             });
 
             // Pending exercise submissions
-            this.db.get('SELECT COUNT(*) as count FROM exercise_submissions WHERE status = "pending"', [], (err, result: any) => {
+            this.db.get('SELECT COUNT(*) as count FROM exercise_submissions WHERE status = "pending"', [], (err: Error | null, result: any) => {
                 if (!err) stats.pendingExerciseSubmissions = result.count;
 
                 // Send response after all queries
@@ -130,13 +135,12 @@ export class AdminController {
         }
 
         // Verify password against user table
-        this.db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user: any) => {
+        this.db.get('SELECT * FROM users WHERE email = ?', [email], async (err: Error | null, user: any) => {
             if (err || !user) {
                 res.status(401).json({ success: false, error: 'Invalid credentials' });
                 return;
             }
 
-            const bcrypt = require('bcryptjs');
             const isValid = await bcrypt.compare(password, user.password);
 
             if (!isValid) {

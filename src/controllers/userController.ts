@@ -4,12 +4,12 @@
  */
 
 import { Response } from 'express';
-import { Database } from 'sqlite3';
+// import { Database, RunResult } from 'sqlite3';
 import { AuthRequest } from '../middleware/auth';
 import { logger } from '../utils/logger';
 
 export class UserController {
-    constructor(private db: Database) { }
+    constructor(private db: any) { }
 
     /**
      * Get user profile
@@ -17,7 +17,7 @@ export class UserController {
     getProfile(req: AuthRequest, res: Response): void {
         const userId = req.user?.userId;
 
-        this.db.get('SELECT * FROM users WHERE id = ?', [userId], (err, user: any) => {
+        this.db.get('SELECT * FROM users WHERE id = ?', [userId], (err: Error | null, user: any) => {
             if (err) {
                 logger.error('Error fetching user profile', err);
                 res.status(500).json({ success: false, error: err.message });
@@ -49,7 +49,8 @@ export class UserController {
         const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
         const values = [...Object.values(updates), userId];
 
-        this.db.run(`UPDATE users SET ${fields} WHERE id = ?`, values, function (err) {
+        const self = this;
+        this.db.run(`UPDATE users SET ${fields} WHERE id = ?`, values, function (this: any, err: Error | null) {
             if (err) {
                 logger.error('Error updating user profile', err);
                 res.status(500).json({ success: false, error: err.message });
@@ -57,7 +58,7 @@ export class UserController {
             }
 
             // Fetch updated user
-            this.get('SELECT * FROM users WHERE id = ?', [userId], (err: any, user: any) => {
+            self.db.get('SELECT * FROM users WHERE id = ?', [userId], (err: Error | null, user: any) => {
                 if (err) {
                     res.status(500).json({ success: false, error: err.message });
                     return;
@@ -79,7 +80,7 @@ export class UserController {
         this.db.all(
             'SELECT * FROM body_measurements WHERE userId = ? ORDER BY date DESC',
             [userId],
-            (err, rows) => {
+            (err: Error | null, rows: any[]) => {
                 if (err) {
                     logger.error('Error fetching measurements', err);
                     res.status(500).json({ success: false, error: err.message });
@@ -96,6 +97,7 @@ export class UserController {
      */
     addMeasurement(req: AuthRequest, res: Response): void {
         const userId = req.user?.userId;
+        const self = this;
         const { date, chest, waist, arms, hips } = req.body;
         const id = Date.now().toString();
         const createdAt = new Date().toISOString();
@@ -104,7 +106,7 @@ export class UserController {
             `INSERT INTO body_measurements (id, userId, date, chest, waist, arms, hips, createdAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [id, userId, date, chest, waist, arms, hips, createdAt],
-            function (err) {
+            function (this: any, err: Error | null) {
                 if (err) {
                     logger.error('Error adding measurement', err);
                     res.status(500).json({ success: false, error: err.message });
@@ -112,7 +114,7 @@ export class UserController {
                 }
 
                 // Update user table with latest measurements
-                this.run(
+                self.db.run(
                     `UPDATE users SET chest = COALESCE(?, chest), waist = COALESCE(?, waist), 
            arms = COALESCE(?, arms), hips = COALESCE(?, hips) WHERE id = ?`,
                     [chest, waist, arms, hips, userId]
@@ -134,7 +136,7 @@ export class UserController {
         this.db.run(
             'DELETE FROM body_measurements WHERE id = ? AND userId = ?',
             [measurementId, userId],
-            function (err) {
+            function (this: any, err: Error | null) {
                 if (err) {
                     logger.error('Error deleting measurement', err);
                     res.status(500).json({ success: false, error: err.message });

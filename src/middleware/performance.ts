@@ -64,7 +64,7 @@ export const performanceMonitor = (req: Request, res: Response, next: NextFuncti
         logger.api(method, endpoint, statusCode, duration);
 
         // Call original end
-        return originalEnd.apply(this, args);
+        return originalEnd.apply(this, args as [any, any, any]);
     };
 
     next();

@@ -6,9 +6,9 @@ import { Router } from 'express';
 import { UserController } from '../controllers/userController';
 import { authenticate } from '../middleware/auth';
 import { validate, updateProfileSchema, bodyMeasurementSchema } from '../middleware/validation';
-import { Database } from 'sqlite3';
+// import { Database } from 'sqlite3';
 
-export function createUserRoutes(db: Database): Router {
+export function createUserRoutes(db: any): Router {
     const router = Router();
     const userController = new UserController(db);
 

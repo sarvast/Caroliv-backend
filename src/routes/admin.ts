@@ -5,9 +5,9 @@
 import { Router } from 'express';
 import { AdminController } from '../controllers/adminController';
 import { authenticate, requireAdmin } from '../middleware/auth';
-import { Database } from 'sqlite3';
+// import { Database } from 'sqlite3';
 
-export function createAdminRoutes(db: Database): Router {
+export function createAdminRoutes(db: any): Router {
     const router = Router();
     const adminController = new AdminController(db);
 

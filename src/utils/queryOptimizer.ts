@@ -3,11 +3,11 @@
  * Provides optimized query helpers
  */
 
-import { Database } from 'sqlite3';
-import { logger } from '../utils/logger';
+// import { Database, RunResult } from 'sqlite3';
+import { logger } from './logger';
 
 export class QueryOptimizer {
-    constructor(private db: Database) { }
+    constructor(private db: any) { }
 
     /**
      * Execute query with performance logging
@@ -16,7 +16,7 @@ export class QueryOptimizer {
         const startTime = Date.now();
 
         return new Promise((resolve, reject) => {
-            this.db.all(sql, params, (err, rows) => {
+            this.db.all(sql, params, (err: Error | null, rows: any[]) => {
                 const duration = Date.now() - startTime;
 
                 if (err) {
@@ -26,7 +26,7 @@ export class QueryOptimizer {
                 }
 
                 if (duration > 100) {
-                    logger.warn('Slow database query', { sql, duration: `${duration}ms`, rowCount: rows?.length });
+                    logger.warn('Slow database query', { sql, duration: `${duration} ms`, rowCount: rows?.length });
                 } else {
                     logger.db('Query executed', sql.split(' ')[0], duration);
                 }
@@ -43,7 +43,7 @@ export class QueryOptimizer {
         const startTime = Date.now();
 
         return new Promise((resolve, reject) => {
-            this.db.get(sql, params, (err, row) => {
+            this.db.get(sql, params, (err: Error | null, row: any) => {
                 const duration = Date.now() - startTime;
 
                 if (err) {
@@ -53,7 +53,7 @@ export class QueryOptimizer {
                 }
 
                 if (duration > 100) {
-                    logger.warn('Slow database query', { sql, duration: `${duration}ms` });
+                    logger.warn('Slow database query', { sql, duration: `${duration} ms` });
                 }
 
                 resolve((row as T) || null);
@@ -68,7 +68,7 @@ export class QueryOptimizer {
         const startTime = Date.now();
 
         return new Promise((resolve, reject) => {
-            this.db.run(sql, params, function (err) {
+            this.db.run(sql, params, function (this: any, err: Error | null) {
                 const duration = Date.now() - startTime;
 
                 if (err) {
@@ -78,7 +78,7 @@ export class QueryOptimizer {
                 }
 
                 if (duration > 100) {
-                    logger.warn('Slow database operation', { sql, duration: `${duration}ms` });
+                    logger.warn('Slow database operation', { sql, duration: `${duration} ms` });
                 }
 
                 resolve({ changes: this.changes, lastID: this.lastID });
@@ -95,7 +95,7 @@ export class QueryOptimizer {
         const startTime = Date.now();
         const keys = Object.keys(records[0]);
         const placeholders = keys.map(() => '?').join(', ');
-        const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`;
+        const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES(${placeholders})`;
 
         return new Promise((resolve, reject) => {
             this.db.serialize(() => {
@@ -107,7 +107,7 @@ export class QueryOptimizer {
                 records.forEach(record => {
                     const values = keys.map(key => record[key]);
 
-                    this.db.run(sql, values, err => {
+                    this.db.run(sql, values, (err: Error | null) => {
                         if (err && !hasError) {
                             hasError = true;
                             this.db.run('ROLLBACK');
@@ -119,7 +119,7 @@ export class QueryOptimizer {
                         completed++;
 
                         if (completed === records.length && !hasError) {
-                            this.db.run('COMMIT', err => {
+                            this.db.run('COMMIT', (err: Error | null) => {
                                 if (err) {
                                     logger.error('Transaction commit error', err);
                                     reject(err);
@@ -127,7 +127,7 @@ export class QueryOptimizer {
                                 }
 
                                 const duration = Date.now() - startTime;
-                                logger.info(`Batch insert completed: ${records.length} records`, { duration: `${duration}ms` });
+                                logger.info(`Batch insert completed: ${records.length} records`, { duration: `${duration} ms` });
                                 resolve(records.length);
                             });
                         }
@@ -142,7 +142,7 @@ export class QueryOptimizer {
      */
     async analyzeQuery(sql: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.db.all(`EXPLAIN QUERY PLAN ${sql}`, [], (err, rows) => {
+            this.db.all(`EXPLAIN QUERY PLAN ${sql} `, [], (err: Error | null, rows: any[]) => {
                 if (err) {
                     reject(err);
                     return;

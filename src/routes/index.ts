@@ -4,11 +4,12 @@
  */
 
 import { Router } from 'express';
-import { Database } from 'sqlite3';
 import { createAuthRoutes } from './auth';
 import { createUserRoutes } from './users';
+import { createAdminRoutes } from './admin';
+// import { Database } from 'sqlite3';
 
-export function createRoutes(db: Database): Router {
+export function createRoutes(db: any): Router {
     const router = Router();
 
     // Mount route modules

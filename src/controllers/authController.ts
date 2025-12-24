@@ -6,13 +6,14 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Database } from 'sqlite3';
+// import { Database } from 'sqlite3';
 import { logger } from '../utils/logger';
+import { emailService } from '../services/emailService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'caroliv-secret-key-2025';
 
 export class AuthController {
-    constructor(private db: Database) { }
+    constructor(private db: any) { }
 
     /**
      * Register a new user
@@ -22,7 +23,7 @@ export class AuthController {
             const { email, password, name, age, gender, height, currentWeight, targetWeight, goal } = req.body;
 
             // Check if user exists
-            this.db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()], async (err, row) => {
+            this.db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()], async (err: Error | null, row: any) => {
                 if (err) {
                     logger.error('Database error during registration', err);
                     res.status(500).json({ success: false, error: err.message });
@@ -44,15 +45,19 @@ export class AuthController {
                     `INSERT INTO users (id, email, password, name, age, gender, height, currentWeight, targetWeight, goal, createdAt, updatedAt)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [userId, email.toLowerCase(), hashedPassword, name, age, gender, height, currentWeight || 0, targetWeight || 0, goal || 'maintain', now, now],
-                    function (err) {
+                    function (err: Error | null) {
                         if (err) {
                             logger.error('Error creating user', err);
                             res.status(500).json({ success: false, error: err.message });
                             return;
                         }
 
+
                         // Generate JWT
                         const token = jwt.sign({ userId, email: email.toLowerCase() }, JWT_SECRET, { expiresIn: '30d' });
+
+                        // Send Welcome Email
+                        emailService.sendWelcomeEmail(email, name).catch((err: any) => logger.error('Async email error', err));
 
                         logger.auth('User registered', email, true);
                         res.json({
@@ -76,7 +81,7 @@ export class AuthController {
         try {
             const { email, password } = req.body;
 
-            this.db.get('SELECT * FROM users WHERE email = ?', [email.toLowerCase()], async (err, user: any) => {
+            this.db.get('SELECT * FROM users WHERE email = ?', [email.toLowerCase()], async (err: Error | null, user: any) => {
                 if (err) {
                     logger.error('Database error during login', err);
                     res.status(500).json({ success: false, error: err.message });
@@ -117,7 +122,7 @@ export class AuthController {
         try {
             const { email, currentWeight, age, newPassword } = req.body;
 
-            this.db.get('SELECT * FROM users WHERE email = ?', [email.toLowerCase()], async (err, user: any) => {
+            this.db.get('SELECT * FROM users WHERE email = ?', [email.toLowerCase()], async (err: Error | null, user: any) => {
                 if (err) {
                     logger.error('Database error during password reset', err);
                     res.status(500).json({ success: false, error: err.message });
@@ -146,7 +151,7 @@ export class AuthController {
                 this.db.run(
                     'UPDATE users SET password = ?, updatedAt = ? WHERE id = ?',
                     [hashedPassword, now, user.id],
-                    function (err) {
+                    function (err: Error | null) {
                         if (err) {
                             logger.error('Error updating password', err);
                             res.status(500).json({ success: false, error: err.message });
