@@ -53,9 +53,10 @@ app.get('/', (req, res) => {
 });
 
 // Start Server
-const server = app.listen(PORT, () => {
+const server = app.listen(Number(PORT), '0.0.0.0', () => {
     logger.info(`✅ Caroliv API running on port ${PORT}`);
     logger.info(`🚀 Mode: Optimized for 1GB VM`);
+    logger.info(`🌐 Binding: 0.0.0.0 (Accessible externally)`);
 });
 
 // Graceful Shutdown
