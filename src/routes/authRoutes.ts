@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from '../lib/db';
-import { sendOtpEmail } from '../services/emailService';
+import { emailService } from '../services/emailService';
 import crypto from 'crypto';
 import { authLimiter, strictAuthLimiter, registrationLimiter } from '../middleware/rateLimiter';
 
@@ -53,6 +53,11 @@ router.post('/register', registrationLimiter, async (req, res) => {
         );
 
         const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+
+        // Send Welcome Email
+        emailService.sendWelcomeEmail(user.email, user.name).catch(err => {
+            console.error('Failed to send welcome email async:', err);
+        });
 
         res.json({
             success: true,
@@ -184,7 +189,7 @@ router.post('/forgot-password', strictAuthLimiter, async (req, res) => {
             [email.toLowerCase(), otp, expiresAt, new Date().toISOString()]
         );
 
-        const emailSent = await sendOtpEmail(email, otp);
+        const emailSent = await emailService.sendOtpEmail(email, otp);
 
         if (emailSent) {
             res.json({ success: true, message: 'OTP sent to email' });

@@ -57,7 +57,7 @@ export class AuthController {
                         const token = jwt.sign({ userId, email: email.toLowerCase() }, JWT_SECRET, { expiresIn: '30d' });
 
                         // Send Welcome Email
-                        emailService.sendWelcomeEmail(email, name).catch((err: any) => logger.error('Async email error', err));
+                        emailService.sendWelcomeEmail(email.toLowerCase(), name).catch((err: any) => logger.error('Async email error', err));
 
                         logger.auth('User registered', email, true);
                         res.json({

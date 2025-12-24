@@ -61,7 +61,10 @@ class EmailService {
     }
 
     async sendOtpEmail(to: string, otp: string): Promise<boolean> {
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        const user = process.env.SMTP_USER || process.env.GMAIL_USER;
+        const pass = process.env.SMTP_PASS || process.env.GMAIL_PASS;
+
+        if (!user || !pass) {
             logger.warn('SMTP credentials not found. Skipping OTP email.');
             return false;
         }
@@ -83,7 +86,7 @@ class EmailService {
 
         try {
             await this.transporter.sendMail({
-                from: '"Caloriv Team" <' + process.env.SMTP_USER + '>',
+                from: '"Caloriv Team" <' + user + '>',
                 to,
                 subject,
                 html,
