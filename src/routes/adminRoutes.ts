@@ -1,11 +1,11 @@
 import express from 'express';
 import { db } from '../lib/db';
-import { checkAdminAuth } from '../middleware/adminMiddleware';
+import { authenticate, requireAdmin } from '../middleware/auth';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
-router.use(checkAdminAuth); // Apply to all routes in this file
+router.use(authenticate, requireAdmin); // Apply to all routes in this file
 
 // 0. Dashboard Stats
 router.get('/stats', async (req, res) => {
