@@ -11,10 +11,27 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
     console.log('Connected to the SQLite database.');
 });
 
-db.serialize(() => {
+const safeAddColumn = (tableName, columnName, columnType) => {
+    return new Promise((resolve) => {
+        db.run(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`, (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column')) {
+                    console.log(`✅ Column "${columnName}" already exists in ${tableName}.`);
+                } else {
+                    console.log(`ℹ️ Note for "${columnName}":`, err.message);
+                }
+            } else {
+                console.log(`✅ Fixed: Added missing "${columnName}" column to ${tableName}.`);
+            }
+            resolve();
+        });
+    });
+};
+
+db.serialize(async () => {
     console.log('Running repair...');
 
-    // 1. Try to create the table if it completely doesn't exist
+    // 1. Ensure table exists
     db.run(`CREATE TABLE IF NOT EXISTS promotions (
         id TEXT PRIMARY KEY,
         title TEXT,
@@ -28,25 +45,29 @@ db.serialize(() => {
         else console.log('✅ Table check passed');
     });
 
-    // 2. Explicitly try to add the column that is reported missing
-    // This will fail if the column exists, which is fine.
+    // 2. Add potential missing columns sequentially
+    // We wrap in a promise chain or just run them because SQLite serializes operations
+    // but better to be explicit with our helper function logic if we were using async/await fully.
+    // Since db.serialize ensures sequence, we can just call them.
+
+    // Fix externalLink
     db.run(`ALTER TABLE promotions ADD COLUMN externalLink TEXT`, (err) => {
-        if (err) {
-            if (err.message.includes('duplicate column')) {
-                console.log('✅ Column "externalLink" already exists.');
-            } else {
-                console.log('ℹ️ Alter table note:', err.message);
-            }
-        } else {
-            console.log('✅ Fixed: Added missing "externalLink" column.');
-        }
+        if (!err) console.log('✅ Added externalLink');
+        else if (err.message.includes('duplicate')) console.log('✅ externalLink exists');
     });
+
+    // Fix delayDays
+    db.run(`ALTER TABLE promotions ADD COLUMN delayDays INTEGER DEFAULT 0`, (err) => {
+        if (!err) console.log('✅ Added delayDays');
+        else if (err.message.includes('duplicate')) console.log('✅ delayDays exists');
+    });
+
 });
 
-db.close((err) => {
-    if (err) {
-        console.error('Error closing database:', err.message);
-    } else {
-        console.log('Database connection closed.');
-    }
-});
+// Wait a bit for the serialized operations to finish before closing
+setTimeout(() => {
+    db.close((err) => {
+        if (err) console.error('Error closing database:', err.message);
+        else console.log('Database connection closed.');
+    });
+}, 2000);
