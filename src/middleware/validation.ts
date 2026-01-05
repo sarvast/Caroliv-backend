@@ -59,7 +59,18 @@ export const updateProfileSchema = z.object({
     chest: z.number().positive().max(200).optional(),
     waist: z.number().positive().max(200).optional(),
     arms: z.number().positive().max(100).optional(),
-    hips: z.number().positive().max(200).optional()
+    hips: z.number().positive().max(200).optional(),
+    // New Onboarding Fields
+    mealsPerDay: z.number().int().min(1).max(10).optional(),
+    cuisines: z.any().optional(),
+    diet: z.string().max(100).optional(),
+    likedFoods: z.any().optional(),
+    dislikedFoods: z.any().optional(),
+    fitnessLevel: z.string().max(50).optional(),
+    workoutDays: z.number().int().min(0).max(7).optional(),
+    equipment: z.string().max(200).optional(),
+    duration: z.number().int().min(0).max(300).optional(),
+    additionalInfo: z.string().max(1000).optional()
 });
 
 // Food schemas

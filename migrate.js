@@ -359,6 +359,46 @@ function migrate() {
                 if (!err) console.log("✅ Added 'currentWeight' column to users table");
             });
 
+            // 5. Add new Onboarding Fields
+            const newColumns = [
+                { name: 'mealsPerDay', type: 'INTEGER' },
+                { name: 'cuisines', type: 'TEXT' },
+                { name: 'diet', type: 'TEXT' },
+                { name: 'likedFoods', type: 'TEXT' },
+                { name: 'dislikedFoods', type: 'TEXT' },
+                { name: 'fitnessLevel', type: 'TEXT' },
+                { name: 'workoutDays', type: 'INTEGER' },
+                { name: 'equipment', type: 'TEXT' },
+                { name: 'duration', type: 'INTEGER' },
+                { name: 'additionalInfo', type: 'TEXT' }
+            ];
+
+            newColumns.forEach(col => {
+                db.run(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`, (err) => {
+                    if (!err) console.log(`✅ Added '${col.name}' column to users table`);
+                });
+            });
+
+            // 5. Add new Onboarding Fields
+            const newColumns = [
+                { name: 'mealsPerDay', type: 'INTEGER' },
+                { name: 'cuisines', type: 'TEXT' },
+                { name: 'diet', type: 'TEXT' },
+                { name: 'likedFoods', type: 'TEXT' },
+                { name: 'dislikedFoods', type: 'TEXT' },
+                { name: 'fitnessLevel', type: 'TEXT' },
+                { name: 'workoutDays', type: 'INTEGER' },
+                { name: 'equipment', type: 'TEXT' },
+                { name: 'duration', type: 'INTEGER' },
+                { name: 'additionalInfo', type: 'TEXT' }
+            ];
+
+            newColumns.forEach(col => {
+                db.run(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`, (err) => {
+                    if (!err) console.log(`✅ Added '${col.name}' column to users table`);
+                });
+            });
+
             console.log('🎉 Migration complete!');
             console.log('');
             console.log('Summary:');
