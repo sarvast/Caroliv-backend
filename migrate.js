@@ -274,14 +274,14 @@ function migrate() {
 
         console.log('✅ Database tables created/verified');
 
-        // Clear existing data (Exercises & Foods only - preserve Users)
-        db.run('DELETE FROM exercises');
-        db.run('DELETE FROM foods');
-        console.log('🗑️  Cleared existing food/exercise data (Users preserved)');
+        // Clear existing data - DISABLED TO PROTECT USER DATA
+        // db.run('DELETE FROM exercises');
+        // db.run('DELETE FROM foods');
+        console.log('ℹ️  Skipping data wipe to preserve user customization');
 
         // Insert exercises
         const exerciseStmt = db.prepare(`
-      INSERT INTO exercises (id, name, category, difficulty, equipment, targetMuscles, gifUrl, defaultSets, isActive, createdAt)
+      INSERT OR REPLACE INTO exercises (id, name, category, difficulty, equipment, targetMuscles, gifUrl, defaultSets, isActive, createdAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     `);
 
@@ -299,11 +299,11 @@ function migrate() {
             );
         });
         exerciseStmt.finalize();
-        console.log(`✅ Inserted ${exercises.length} exercises`);
+        console.log(`✅ Upserted ${exercises.length} exercises (Updated existing)`);
 
         // Insert foods with macro data including pairingTags
         const foodStmt = db.prepare(`
-      INSERT INTO foods (id, name, nameHindi, calories, protein, carbs, fat, emoji, category, searchTerms, pairingTags, isActive, createdAt)
+      INSERT OR REPLACE INTO foods (id, name, nameHindi, calories, protein, carbs, fat, emoji, category, searchTerms, pairingTags, isActive, createdAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     `);
 
@@ -352,11 +352,11 @@ function migrate() {
             );
         });
         foodStmt.finalize(() => {
-            console.log(`✅ Inserted ${foods.length} foods with macros`);
+            console.log(`✅ Upserted ${foods.length} foods (Updated existing)`);
 
             // 4. Ensure Users Table has currentWeight (Fixes registration error)
             db.run("ALTER TABLE users ADD COLUMN currentWeight INTEGER DEFAULT 0", (err) => {
-                if (!err) console.log("✅ Added 'currentWeight' column to users table");
+                // Ignore duplicate column error
             });
 
             // 5. Add new Onboarding Fields
@@ -375,36 +375,13 @@ function migrate() {
 
             newColumns.forEach(col => {
                 db.run(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`, (err) => {
-                    if (!err) console.log(`✅ Added '${col.name}' column to users table`);
-                });
-            });
-
-            // 5. Add new Onboarding Fields
-            const newColumns = [
-                { name: 'mealsPerDay', type: 'INTEGER' },
-                { name: 'cuisines', type: 'TEXT' },
-                { name: 'diet', type: 'TEXT' },
-                { name: 'likedFoods', type: 'TEXT' },
-                { name: 'dislikedFoods', type: 'TEXT' },
-                { name: 'fitnessLevel', type: 'TEXT' },
-                { name: 'workoutDays', type: 'INTEGER' },
-                { name: 'equipment', type: 'TEXT' },
-                { name: 'duration', type: 'INTEGER' },
-                { name: 'additionalInfo', type: 'TEXT' }
-            ];
-
-            newColumns.forEach(col => {
-                db.run(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`, (err) => {
-                    if (!err) console.log(`✅ Added '${col.name}' column to users table`);
+                    // Ignore duplicate column error silently in migration script
                 });
             });
 
             console.log('🎉 Migration complete!');
             console.log('');
             console.log('Summary:');
-            console.log(`  - Exercises: ${exercises.length}`);
-            console.log(`  - Foods: ${foods.length}`);
-            console.log(`  - Total: ${exercises.length + foods.length} items`);
             console.log(`  - Database: ${DB_PATH}`);
 
             // Close database AFTER all inserts complete

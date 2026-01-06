@@ -57,9 +57,10 @@ export const initDb = async () => {
         await safeAddColumn('users', 'workoutGoal', 'TEXT DEFAULT "weight_loss"');
         await safeAddColumn('users', 'currentStreak', 'INTEGER DEFAULT 0');
         await safeAddColumn('users', 'lastLoginDate', 'TEXT DEFAULT ""');
-
-        // New: Streak Shield (Retention Feature)
         await safeAddColumn('users', 'streakShields', 'INTEGER DEFAULT 0');
+
+        // Critical Fix: Add externalLink to promotions if missing
+        await safeAddColumn('promotions', 'externalLink', 'TEXT DEFAULT ""');
 
         logger.info('✅ Database initialized and migrated successfully');
     } catch (error) {
@@ -71,6 +72,14 @@ export const initDb = async () => {
 // Helper to add columns safely without crashing if they exist
 const safeAddColumn = async (table: string, column: string, definition: string) => {
     try {
+        // Check if column exists first to avoid noisy errors
+        const columns = await db.query(`PRAGMA table_info(${table})`);
+        const exists = columns.some((col: any) => col.name === column);
+
+        if (exists) {
+            return;
+        }
+
         await db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
         logger.info(`Checking Schema: Added column '${column}' to '${table}'`);
     } catch (e: any) {
